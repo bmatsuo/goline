@@ -39,7 +39,7 @@ func TestAnswerInt(T *testing.T) {
     testGood(T, a, "Simple", "1234", int64(1234))
     testBad(T, a, "Simple", "123JumpStreet")
     // Ranged parse tests
-    a.InRange(int64(-3), int64(10))
+    a.Set = IntRange{int64(-3), int64(10)}
     testGood(T, a, "In-range", "5", int64(5))
     testGood(T, a, "Edge-low", "-3", int64(-3))
     testGood(T, a, "Edge-high", "10", int64(10))
@@ -54,7 +54,7 @@ func TestAnswerUint(T *testing.T) {
     testGood(T, a, "Trimmed", " 4321  \n", uint64(4321))
     testBad(T, a, "Simple", "123JumpStreet")
     // Ranged parse tests
-    a.InRange(uint64(1), uint64(10))
+    a.Set = UintRange{uint64(1), uint64(10)}
     testGood(T, a, "In-range", "5", uint64(5))
     testGood(T, a, "Edge-low", "1", uint64(1))
     testGood(T, a, "Edge-high", "10", uint64(10))
@@ -71,7 +71,7 @@ func TestAnswerFloat(T *testing.T) {
     testGood(T, a, "Scientific", "123.5e+1", float64(1235.0))
     testBad(T, a, "Complex", "123.5+i5")
     // Ranged parse tests
-    a.InRange(float64(1), float64(10))
+    a.Set = FloatRange{float64(1), float64(10)}
     testGood(T, a, "In-range", "5", float64(5))
     testGood(T, a, "Edge-low", "1", float64(1))
     testGood(T, a, "Edge-high", "10", float64(10))
@@ -88,10 +88,13 @@ func TestAnswerString(T *testing.T) {
     a.Opt |= Collapse
     testGood(T, a, "Collapse", " 4321  \tabc  \n", " 4321 abc \n")
     // Ranged parse tests
-    a.InRange("aaa", "zzz")
+    a.Set = StringRange{"aaa", "zzz"}
     testGood(T, a, "In-range", "tidoeids", "tidoeids")
     testGood(T, a, "Edge-low", "aaa", "aaa")
     testGood(T, a, "Edge-high", "zzz", "zzz")
     testBad(T, a, "Low", "ZZZ")
     testBad(T, a, "High", "{")
+    a.Set = StringSet([]string{"abc", "def", "ghi"})
+    testGood(T, a, "In set", "def", "def")
+    testBad(T, a, "Not in set", "blah")
 }

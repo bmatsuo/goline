@@ -57,6 +57,7 @@ func (t Type) IsSliceType() bool {
 
 type Answer struct {
     Opt     Options
+    Set     AnswerSet
     t       Type
     v       interface{}
     d       interface{}
@@ -94,6 +95,7 @@ func newAnswer(t Type) *Answer {
         a.Opt = Trim | Collapse
     }
     a.sep = " "
+    a.Set = nil
     return a
 }
 
@@ -103,6 +105,13 @@ func errorEmptyRange(min, max interface{}) os.Error {
 func errorTypeError(expect, recv interface{}) os.Error {
     return fmt.Errorf("Received type %s not equal to expected type %s",
         reflect.ValueOf(recv).Kind().String(), reflect.ValueOf(expect).Kind().String())
+}
+
+func (a *Answer) SetHas(x interface{}) bool {
+    if a.Set != nil {
+        return a.Set.Has(x)
+    }
+    return true
 }
 
 func (a *Answer) Default() interface{} { return a.d }
@@ -218,6 +227,15 @@ type RecoverableError interface {
     IsRecoverable() bool
 }
 
+type ErrorNotInSet struct{ os.Error }
+
+func (err ErrorNotInSet) IsRecoverable() bool { return true }
+
+func (a *Answer) makeErrorNotInSet(val interface{}) ErrorNotInSet {
+    return ErrorNotInSet{
+        fmt.Errorf("Value %v not in set %s", val, a.Set.String())}
+}
+
 type ErrorOutOfRange struct {
     value, min, max interface{}
     err             os.Error
@@ -255,9 +273,8 @@ func (a *Answer) parse(in string) os.Error {
         if useDefault {
             in = a.d.(string)
         }
-        if a.inRange && (in < a.smin || in > a.smax) {
-            err = errorOOR(in, a.smin, a.smax)
-            return err
+        if !a.SetHas(in) {
+            return a.makeErrorNotInSet(in)
         }
         a.v = in
     case Int:
@@ -266,12 +283,11 @@ func (a *Answer) parse(in string) os.Error {
             x = a.d.(int64)
         } else if noInput {
             return ErrorEmptyInput(0)
-        }else if x, err = strconv.Atoi64(in); err != nil {
+        } else if x, err = strconv.Atoi64(in); err != nil {
             return err
         }
-        if a.inRange && (x < a.imin || x > a.imax) {
-            err = errorOOR(x, a.imin, a.imax)
-            return err
+        if !a.SetHas(x) {
+            return a.makeErrorNotInSet(x)
         }
         a.v = x
     case Uint:
@@ -280,12 +296,11 @@ func (a *Answer) parse(in string) os.Error {
             x = a.d.(uint64)
         } else if noInput {
             return ErrorEmptyInput(0)
-        }else if x, err = strconv.Atoui64(in); err != nil {
+        } else if x, err = strconv.Atoui64(in); err != nil {
             return err
         }
-        if a.inRange && (x < a.umin || x > a.umax) {
-            err = errorOOR(x, a.umin, a.umax)
-            return err
+        if !a.SetHas(x) {
+            return a.makeErrorNotInSet(x)
         }
         a.v = x
     case Float:
@@ -294,12 +309,11 @@ func (a *Answer) parse(in string) os.Error {
             x = a.d.(float64)
         } else if noInput {
             return ErrorEmptyInput(0)
-        }else if x, err = strconv.Atof64(in); err != nil {
+        } else if x, err = strconv.Atof64(in); err != nil {
             return err
         }
-        if a.inRange && (x < a.fmin || x > a.fmax) {
-            err = errorOOR(x, a.umin, a.umax)
-            return err
+        if !a.SetHas(x) {
+            return a.makeErrorNotInSet(x)
         }
         a.v = x
     case StringSlice:
