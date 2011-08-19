@@ -1,0 +1,46 @@
+goline-questions version 0.0_1
+=======================================================================
+
+ABOUT goline-questions
+
+    
+
+USAGE
+
+    Run goline-questions with the command
+
+        goline-questions [options]
+
+DEPENDENCIES
+
+    You must have Go installed (http://golang.org/). 
+
+INSTALLATION
+
+    Use goinstall to install goline-questions
+
+        goinstall github.com/bmatsuo/goline-questions
+
+DOCUMENTATION
+
+    Use godoc to vew the documentation for goline-questions
+
+        godoc github.com/bmatsuo/goline-questions
+
+    Or alternatively, use a godoc http server
+
+        godoc -http=:6060
+
+    and view the url localhost:6060/pkg/github.com/bmatsuo/goline-questions/
+
+AUTHOR
+
+    Bryan Matsuo <bmatsuo@soe.ucsc.edu>
+
+COPYRIGHT & LICENSE
+
+    Copyright (c) 2011, Bryan Matsuo.
+    All rights reserved.
+
+    Use of this source code is governed by a BSD-style license that can
+    be found in the LICENSE file.

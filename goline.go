@@ -10,7 +10,11 @@
  *  Description: 
  */
 
-// Package goline does ....
+// Package goline manages prompts in the spirit of highline.
 package goline
 import (
+    "fmt"
+    "os"
 )
+
+func Say(msg string) (int, os.Error) { return fmt.Println(msg) }

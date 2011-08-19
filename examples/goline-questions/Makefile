@@ -7,12 +7,12 @@
 
 include $(GOROOT)/src/Make.inc
 
-TARG=goline
+TARG=goline-questions
 GOFILES=\
-		answer.go\
-		question.go\
-		menu.go\
-        goline.go\
+        options.go\
+        goline-questions.go\
 
-include $(GOROOT)/src/Make.pkg
+include $(GOROOT)/src/Make.cmd
 
+test:
+	gotest
