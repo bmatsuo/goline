@@ -7,6 +7,7 @@ package goline
  *  Description: 
  */
 import (
+    "unicode"
     "strings"
     "strconv"
     "reflect"
@@ -15,11 +16,15 @@ import (
     "os"
 )
 
-type Options uint
+type WhitespaceOptions uint
 
 const (
-    Trim Options = 1 << iota
+    NilWhitespace WhitespaceOptions = 1 << iota
+    Strip
+    Chomp
+    Trim
     Collapse
+    Remove
 )
 
 //  64-bit types are always used to read data. It is then cast to a thinner
@@ -56,29 +61,34 @@ func (t Type) IsSliceType() bool {
 }
 
 type Answer struct {
-    Opt     Options
-    Set     AnswerSet
-    t       Type
-    v       interface{}
-    d       interface{}
-    inRange bool
-    umin    uint64
-    umax    uint64
-    fmin    float64
-    fmax    float64
-    imin    int64
-    imax    int64
-    smin    string
-    smax    string
-    sep     string
+    // Options for pre-processing scanned input
+    Whitespace WhitespaceOptions
+    // Field separator for slice (list) inputs.
+    Sep string
+    set AnswerSet
+    typ Type
+    val interface{}
+    def interface{}
+    /*
+       inRange bool
+       umin    uint64
+       umax    uint64
+       fmin    float64
+       fmax    float64
+       imin    int64
+       imax    int64
+       smin    string
+       smax    string
+    */
 }
 
 func newAnswer(t Type) *Answer {
     a := new(Answer)
-    a.t = t
-    a.d = nil
-    switch a.t {
-    //case String:
+    a.typ = t
+    a.def = nil
+    switch a.typ {
+    case String:
+        a.Whitespace = Trim
     case Int:
         fallthrough
     case Uint:
@@ -92,10 +102,10 @@ func newAnswer(t Type) *Answer {
     case UintSlice:
         fallthrough
     case FloatSlice:
-        a.Opt = Trim | Collapse
+        a.Whitespace = Trim | Collapse
     }
-    a.sep = " "
-    a.Set = nil
+    a.Sep = " "
+    a.set = nil
     return a
 }
 
@@ -108,65 +118,65 @@ func errorTypeError(expect, recv interface{}) os.Error {
 }
 
 func (a *Answer) SetHas(x interface{}) bool {
-    if a.Set != nil {
-        return a.Set.Has(x)
+    if a.set != nil {
+        return a.set.Has(x)
     }
     return true
 }
 
-func (a *Answer) Default() interface{} { return a.d }
+func (a *Answer) Default() interface{} { return a.def }
 func (a *Answer) DefaultString() string {
-    if a.d != nil {
-        return fmt.Sprintf("|%v|  ", a.d)
+    if a.def != nil {
+        return fmt.Sprintf("|%v|  ", a.def)
     }
     return ""
 }
 func (a *Answer) SetDefault(v interface{}) os.Error {
     var err os.Error
-    switch a.t {
+    switch a.typ {
     case String:
         switch v.(type) {
         case string:
-            a.d = v
+            a.def = v
         default:
             errorTypeError("", v)
         }
     case Int:
         switch v.(type) {
         case int:
-            a.d = int64(v.(int))
+            a.def = int64(v.(int))
         case int8:
-            a.d = int64(v.(int8))
+            a.def = int64(v.(int8))
         case int16:
-            a.d = int64(v.(int16))
+            a.def = int64(v.(int16))
         case int32:
-            a.d = int64(v.(int32))
+            a.def = int64(v.(int32))
         case int64:
-            a.d = int64(v.(int64))
+            a.def = int64(v.(int64))
         default:
             errorTypeError(int64(1), v)
         }
     case Uint:
         switch v.(type) {
         case uint:
-            a.d = uint64(v.(uint))
+            a.def = uint64(v.(uint))
         case uint8:
-            a.d = uint64(v.(uint8))
+            a.def = uint64(v.(uint8))
         case uint16:
-            a.d = uint64(v.(uint16))
+            a.def = uint64(v.(uint16))
         case uint32:
-            a.d = uint64(v.(uint32))
+            a.def = uint64(v.(uint32))
         case uint64:
-            a.d = v.(uint64)
+            a.def = v.(uint64)
         default:
             errorTypeError(uint64(1), v)
         }
     case Float:
         switch v.(type) {
         case float32:
-            a.d = float64(v.(float32))
+            a.def = float64(v.(float32))
         case float64:
-            a.d = v.(float64)
+            a.def = v.(float64)
         default:
             errorTypeError(float64(1), v)
         }
@@ -177,13 +187,16 @@ func (a *Answer) SetDefault(v interface{}) os.Error {
     case UintSlice:
         fallthrough
     case FloatSlice:
-        err = fmt.Errorf("%s unimplemented", a.t.String())
+        err = fmt.Errorf("%s unimplemented", a.typ.String())
     }
     return err
 }
 
+func (a *Answer) In(s AnswerSet) { a.set = s }
+
+/*
 func (a *Answer) InRange(min, max interface{}) {
-    switch a.t {
+    switch a.typ {
     case String:
         fallthrough
     case StringSlice:
@@ -219,8 +232,9 @@ func (a *Answer) InRange(min, max interface{}) {
     }
     a.inRange = true
 }
+*/
 
-func (a *Answer) Type() Type { return a.t }
+func (a *Answer) Type() Type { return a.typ }
 
 type RecoverableError interface {
     os.Error
@@ -233,7 +247,7 @@ func (err ErrorNotInSet) IsRecoverable() bool { return true }
 
 func (a *Answer) makeErrorNotInSet(val interface{}) ErrorNotInSet {
     return ErrorNotInSet{
-        fmt.Errorf("Value %v not in set %s", val, a.Set.String())}
+        fmt.Errorf("Value %v not in set %s", val, a.set.String())}
 }
 
 type ErrorOutOfRange struct {
@@ -258,29 +272,38 @@ func (oor ErrorEmptyInput) IsRecoverable() bool { return true }
 var spaceRE = regexp.MustCompile("[ \t]+")
 
 func (a *Answer) parse(in string) os.Error {
-    if a.Opt&Trim > 0 {
-        in = strings.TrimSpace(in)
+    if a.Whitespace&Remove > 0 {
+        in = strings.Join(strings.FieldsFunc(in, unicode.IsSpace), "")
+    } else {
+        if a.Whitespace&Chomp > 0 {
+            if in[len(in)-1] == '\r' {
+                in = in[:len(in)]
+            }
+        }
+        if a.Whitespace&Trim > 0 {
+            in = strings.TrimSpace(in)
+        }
+        if a.Whitespace&Collapse > 0 {
+            in = spaceRE.ReplaceAllString(in, " ")
+        }
     }
-    if a.Opt&Collapse > 0 {
-        in = spaceRE.ReplaceAllString(in, " ")
-    }
-    a.v = a.d
+    a.val = a.def
     noInput := len(in) == 0
-    useDefault := noInput && a.d != nil
+    useDefault := noInput && a.def != nil
     var err os.Error
-    switch a.t {
+    switch a.typ {
     case String:
         if useDefault {
-            in = a.d.(string)
+            in = a.def.(string)
         }
         if !a.SetHas(in) {
             return a.makeErrorNotInSet(in)
         }
-        a.v = in
+        a.val = in
     case Int:
         var x int64
         if useDefault {
-            x = a.d.(int64)
+            x = a.def.(int64)
         } else if noInput {
             return ErrorEmptyInput(0)
         } else if x, err = strconv.Atoi64(in); err != nil {
@@ -289,11 +312,11 @@ func (a *Answer) parse(in string) os.Error {
         if !a.SetHas(x) {
             return a.makeErrorNotInSet(x)
         }
-        a.v = x
+        a.val = x
     case Uint:
         var x uint64
         if useDefault {
-            x = a.d.(uint64)
+            x = a.def.(uint64)
         } else if noInput {
             return ErrorEmptyInput(0)
         } else if x, err = strconv.Atoui64(in); err != nil {
@@ -302,11 +325,11 @@ func (a *Answer) parse(in string) os.Error {
         if !a.SetHas(x) {
             return a.makeErrorNotInSet(x)
         }
-        a.v = x
+        a.val = x
     case Float:
         var x float64
         if useDefault {
-            x = a.d.(float64)
+            x = a.def.(float64)
         } else if noInput {
             return ErrorEmptyInput(0)
         } else if x, err = strconv.Atof64(in); err != nil {
@@ -315,7 +338,7 @@ func (a *Answer) parse(in string) os.Error {
         if !a.SetHas(x) {
             return a.makeErrorNotInSet(x)
         }
-        a.v = x
+        a.val = x
     case StringSlice:
         fallthrough
     case IntSlice:
@@ -323,7 +346,7 @@ func (a *Answer) parse(in string) os.Error {
     case UintSlice:
         fallthrough
     case FloatSlice:
-        err = fmt.Errorf("%s unimplemented", a.t.String())
+        err = fmt.Errorf("%s unimplemented", a.typ.String())
     }
     return err
 }

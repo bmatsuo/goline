@@ -93,66 +93,66 @@ func Ask(dest interface{}, msg string, config func(*Answer)) os.Error {
         switch dest.(type) {
         case *uint:
             d := dest.(*uint)
-            *(d) = uint(a.v.(uint64))
-            if x := uint64(*(d)); x != a.v.(uint64) {
-                errCast = ErrorPrecision{a.v.(uint64), x}
+            *(d) = uint(a.val.(uint64))
+            if x := uint64(*(d)); x != a.val.(uint64) {
+                errCast = ErrorPrecision{a.val.(uint64), x}
             }
         case *uint8:
             d := dest.(*uint8)
-            *(d) = uint8(a.v.(uint64))
-            if x := uint64(*(d)); x != a.v.(uint64) {
-                errCast = ErrorPrecision{a.v.(uint64), x}
+            *(d) = uint8(a.val.(uint64))
+            if x := uint64(*(d)); x != a.val.(uint64) {
+                errCast = ErrorPrecision{a.val.(uint64), x}
             }
         case *uint16:
             d := dest.(*uint16)
-            *(d) = uint16(a.v.(uint64))
-            if x := uint64(*(d)); x != a.v.(uint64) {
-                errCast = ErrorPrecision{a.v.(uint64), x}
+            *(d) = uint16(a.val.(uint64))
+            if x := uint64(*(d)); x != a.val.(uint64) {
+                errCast = ErrorPrecision{a.val.(uint64), x}
             }
         case *uint32:
             d := dest.(*uint32)
-            *(d) = uint32(a.v.(uint64))
-            if x := uint64(*(d)); x != a.v.(uint64) {
-                errCast = ErrorPrecision{a.v.(uint64), x}
+            *(d) = uint32(a.val.(uint64))
+            if x := uint64(*(d)); x != a.val.(uint64) {
+                errCast = ErrorPrecision{a.val.(uint64), x}
             }
         case *uint64:
-            *(dest.(*uint64)) = a.v.(uint64)
+            *(dest.(*uint64)) = a.val.(uint64)
         case *int:
             d := dest.(*int)
-            *(d) = int(a.v.(int64))
-            if x := int64(*(d)); x != a.v.(int64) {
-                errCast = ErrorPrecision{a.v.(int64), x}
+            *(d) = int(a.val.(int64))
+            if x := int64(*(d)); x != a.val.(int64) {
+                errCast = ErrorPrecision{a.val.(int64), x}
             }
         case *int8:
             d := dest.(*int8)
-            *(d) = int8(a.v.(int64))
-            if x := int64(*(d)); x != a.v.(int64) {
-                errCast = ErrorPrecision{a.v.(int64), x}
+            *(d) = int8(a.val.(int64))
+            if x := int64(*(d)); x != a.val.(int64) {
+                errCast = ErrorPrecision{a.val.(int64), x}
             }
         case *int16:
             d := dest.(*int16)
-            *(d) = int16(a.v.(int64))
-            if x := int64(*(d)); x != a.v.(int64) {
-                errCast = ErrorPrecision{a.v.(int64), x}
+            *(d) = int16(a.val.(int64))
+            if x := int64(*(d)); x != a.val.(int64) {
+                errCast = ErrorPrecision{a.val.(int64), x}
             }
         case *int32:
             d := dest.(*int32)
-            *(d) = int32(a.v.(int64))
-            if x := int64(*(d)); x != a.v.(int64) {
-                errCast = ErrorPrecision{a.v.(int64), x}
+            *(d) = int32(a.val.(int64))
+            if x := int64(*(d)); x != a.val.(int64) {
+                errCast = ErrorPrecision{a.val.(int64), x}
             }
         case *int64:
-            *(dest.(*int64)) = a.v.(int64)
+            *(dest.(*int64)) = a.val.(int64)
         case *float32:
             d := dest.(*float32)
-            *(d) = float32(a.v.(float64))
-            if x := float64(*(d)); x != a.v.(float64) {
-                errCast = ErrorPrecision{a.v.(float64), x}
+            *(d) = float32(a.val.(float64))
+            if x := float64(*(d)); x != a.val.(float64) {
+                errCast = ErrorPrecision{a.val.(float64), x}
             }
         case *float64:
-            *(dest.(*float64)) = a.v.(float64)
+            *(dest.(*float64)) = a.val.(float64)
         case *string:
-            *(dest.(*string)) = a.v.(string)
+            *(dest.(*string)) = a.val.(string)
         default:
             errCast = fmt.Errorf("Unexpected cast type")
         }

@@ -61,7 +61,8 @@ func Choose(dest, choices interface{}, label, msg string) os.Error {
     }
     var ichosen int
     err := Ask(&ichosen, msg, func(a *Answer) {
-        a.InRange(int64(1), int64(len(schoices)))
+        // TODO Make a string set.
+        //a.In(int64(1), int64(len(schoices)))
     })
     if err != nil {
         return err
