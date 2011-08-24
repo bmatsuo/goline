@@ -1,8 +1,8 @@
 About goline
 =============
 
-GoLine is a user interface library that takes much inspiration from
-[the HighLine library of Ruby]
+Package goline (GoLine) is a user interface (prompting) library inspired by
+[the HighLine library of the Ruby language]
 (http://raveendran.wordpress.com/2008/07/05/highline-ruby-gem/).
 
 Documentation
