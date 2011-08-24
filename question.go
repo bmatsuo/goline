@@ -71,7 +71,7 @@ func Ask(dest interface{}, msg string, config func(*Answer)) os.Error {
     prompt := msg
     r := bufio.NewReader(os.Stdin)
     for {
-        fmt.Print(strings.Trim(prompt, "\n") + a.DefaultString())
+        fmt.Print(strings.Trim(prompt, "\n") + a.defaultString())
         var resp []byte
         for cont := true; cont; {
             s, isPrefix, err := r.ReadLine()

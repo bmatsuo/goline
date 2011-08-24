@@ -157,7 +157,7 @@ func newAnswer(t Type) *Answer {
     return a
 }
 
-func (a *Answer) SetHas(x interface{}) bool {
+func (a *Answer) setHas(x interface{}) bool {
     if a.set != nil {
         return a.set.Has(x)
     }
@@ -236,7 +236,7 @@ func (a *Answer) tryFirstAnswer() os.Error {
     return nil
 }
 
-func (a *Answer) DefaultString() string {
+func (a *Answer) defaultString() string {
     if a.Default != nil {
         return fmt.Sprintf("|%v|  ", a.Default)
     }
@@ -253,59 +253,9 @@ func (a *Answer) tryDefault() (val interface{}, err os.Error) {
     val = nil
     return
 }
-/*
-func (a *Answer) Default() interface{} { return a.def }
-func (a *Answer) SetDefault(v interface{}) os.Error {
-    if def, err := a.typeCast(v); err != nil {
-        return err
-    } else {
-        a.def = def
-    }
-    return nil
-}
-*/
 
+//  Specify a set of answers in which the response much be contained.
 func (a *Answer) In(s AnswerSet) { a.set = s }
-
-/*
-func (a *Answer) InRange(min, max interface{}) {
-    switch a.typ {
-    case String:
-        fallthrough
-    case StringSlice:
-        a.smin = min.(string)
-        a.smax = max.(string)
-        if a.smax < a.smin {
-            panic(errorEmptyRange(min, max))
-        }
-    case Int:
-        fallthrough
-    case IntSlice:
-        a.imin = min.(int64)
-        a.imax = max.(int64)
-        if a.imax < a.imin {
-            panic(errorEmptyRange(min, max))
-        }
-    case Uint:
-        fallthrough
-    case UintSlice:
-        a.umin = min.(uint64)
-        a.umax = max.(uint64)
-        if a.umax < a.umin {
-            panic(errorEmptyRange(min, max))
-        }
-    case Float:
-        fallthrough
-    case FloatSlice:
-        a.fmin = min.(float64)
-        a.fmax = max.(float64)
-        if a.fmax < a.fmin {
-            panic(errorEmptyRange(min, max))
-        }
-    }
-    a.inRange = true
-}
-*/
 
 func (a *Answer) Type() Type { return a.typ }
 
@@ -409,7 +359,7 @@ func (a *Answer) parse(in string) os.Error {
     case Uint:
         fallthrough
     case Float:
-        if !a.SetHas(val) {
+        if !a.setHas(val) {
             return a.makeErrorNotInSet(a.Responses, val)
         }
     case StringSlice:
