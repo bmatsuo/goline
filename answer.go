@@ -351,17 +351,15 @@ func (a *Answer) parse(in string) os.Error {
         }
     }
 
-    // Perform string comparisons and set membership tests.
-    // TODO separate into two clean switch statments.
+    // Parse the user's input.
+    var val interface{}
     switch a.typ {
     case String:
         if useDefault {
-            in = def.(string)
+            val = def.(string)
+        } else {
+            val = in
         }
-        if !a.SetHas(in) {
-            return a.makeErrorNotInSet(a.Responses, in)
-        }
-        a.val = in
     case Int:
         var x int64
         if useDefault {
@@ -371,10 +369,7 @@ func (a *Answer) parse(in string) os.Error {
         } else if x, err = strconv.Atoi64(in); err != nil {
             return err
         }
-        if !a.SetHas(x) {
-            return a.makeErrorNotInSet(a.Responses, x)
-        }
-        a.val = x
+        val = x
     case Uint:
         var x uint64
         if useDefault {
@@ -384,10 +379,7 @@ func (a *Answer) parse(in string) os.Error {
         } else if x, err = strconv.Atoui64(in); err != nil {
             return err
         }
-        if !a.SetHas(x) {
-            return a.makeErrorNotInSet(a.Responses, x)
-        }
-        a.val = x
+        val = x
     case Float:
         var x float64
         if useDefault {
@@ -397,10 +389,7 @@ func (a *Answer) parse(in string) os.Error {
         } else if x, err = strconv.Atof64(in); err != nil {
             return err
         }
-        if !a.SetHas(x) {
-            return a.makeErrorNotInSet(a.Responses, x)
-        }
-        a.val = x
+        val = x
     case StringSlice:
         fallthrough
     case IntSlice:
@@ -410,5 +399,33 @@ func (a *Answer) parse(in string) os.Error {
     case FloatSlice:
         err = fmt.Errorf("%s unimplemented", a.typ.String())
     }
+
+    // Check set membership
+    switch a.typ {
+    case String:
+        fallthrough
+    case Int:
+        fallthrough
+    case Uint:
+        fallthrough
+    case Float:
+        if !a.SetHas(val) {
+            return a.makeErrorNotInSet(a.Responses, val)
+        }
+    case StringSlice:
+        fallthrough
+    case IntSlice:
+        fallthrough
+    case UintSlice:
+        fallthrough
+    case FloatSlice:
+        err = fmt.Errorf("%s unimplemented", a.typ.String())
+    }
+
+    // Set the parsed value if there was no error.
+    if err == nil {
+        a.val = val
+    }
+
     return err
 }
