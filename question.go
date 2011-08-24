@@ -68,6 +68,12 @@ func Ask(dest interface{}, msg string, config func(*Answer)) os.Error {
     a.Question = msg
     config(a)
 
+    if err := a.tryFirstAnswer(); err != nil {
+        return err
+    } else if a.val != nil {
+        return nil
+    }
+
     prompt := msg
     r := bufio.NewReader(os.Stdin)
     for {

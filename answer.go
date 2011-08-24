@@ -18,33 +18,49 @@ import (
 type WhitespaceOption uint
 
 const (
+    // Perform no whitespace preprocessing.
     NilWhitespace WhitespaceOption = 0
-    Strip         WhitespaceOption = 1 << iota
-    Chomp
+    // Remove the trailing newline from input.
+    Chomp WhitespaceOption = 1 << iota
+    // Remove all leading and trailing whitespace from the input. See unicode.IsSpace.
     Trim
+    // Replace all runs of whitespace with a single space character ' '.
     Collapse
+    // Remove all whitespace from string input.
     Remove
 )
 
 type CaseOption uint
 
 const (
+    // Perform no case adjustment.
     NilCase CaseOption = iota
+    // Convert string input to its upper case equivalent.
     Upper
+    // Convert string input to its lower case equivalent.
     Lower
-    // TODO implement Capitalize
+    // Capitalize the first character of input (after whitespace processing) (TODO)
     Capitalize
 )
 
 type Response uint
 
 const (
+    // A question that prompts the user when an error was encountered.
     AskOnError Response = iota
+    // The error message printed when an Answer's FirstAnswer or Default has
+    // a type incompatible with its Type.
     InvalidType
-    //NoCompletion
-    //AmbiguousCompletion
+    // The error message printed when the parsed input was not in the Answer's
+    // AnswerSet.
     NotInSet
+    // The error message printed when the answer did not pass any validity
+    // test.
     //NotValid
+    // The error message printed when there are no auto-completion results.
+    //NoCompletion
+    // The error message printed when auto-completion is ambiguous.
+    //AmbiguousCompletion
 )
 
 type Responses [3]string
@@ -52,10 +68,10 @@ type Responses [3]string
 var defaultResponses = Responses{
     AskOnError:  "Please retry:  ",
     InvalidType: "Type mismatch",
-    //NoCompletion: "No auto-completion",
-    //AmbiguousCompletion: "Ambiguous auto-completion",
     NotInSet: "Answer not contained in",
     //NotValid: "Answer did not pass validity test.",
+    //NoCompletion: "No auto-completion",
+    //AmbiguousCompletion: "Ambiguous auto-completion",
 }
 
 func makeResponses() Responses {
@@ -97,13 +113,15 @@ func (t Type) IsSliceType() bool { return t >= StringSlice }
 type Answer struct {
     // The "prompt" message for the user.
     Question string
-    // Options for pre-processing scanned input whitespace
+    // Pre-processing options for whitespace. See WhitespaceOption.
     Whitespace WhitespaceOption
-    // Options for pre-processing scanned input symbol case
+    // Pre-processing options string case. See CaseOption.
     Case CaseOption
-    // A list of responses to various errors.
+    // A set of responses to various errors. See Response.
     Responses
-    // Field separator for slice (list) inputs.
+    // If this field is not nil then then Ask() will assign it to the
+    // destination variable without prompting the user; provided that it
+    // satisfies all the validity and set membership tests of the Answer.
     FirstAnswer interface{}
     // The default value used when the user inputs an empty string.
     Default interface{}
@@ -162,54 +180,53 @@ func (a *Answer) setHas(x interface{}) bool {
     return true
 }
 
-func (a *Answer) typeCast(v interface{}) (interface{}, os.Error) {
-    var zero interface{}
+func (a *Answer) typeCast(v interface{}) (val interface{}, err os.Error) {
     switch a.typ {
     case String:
         switch v.(type) {
         case string:
-            return v, nil
+            val = v
         default:
-            return zero, errorTypeError(a.Responses, "", v)
+            err = errorTypeError(a.Responses, "", v)
         }
     case Int:
         switch v.(type) {
         case int:
-            return int64(v.(int)), nil
+            val = int64(v.(int))
         case int8:
-            return int64(v.(int8)), nil
+            val = int64(v.(int8))
         case int16:
-            return int64(v.(int16)), nil
+            val = int64(v.(int16))
         case int32:
-            return int64(v.(int32)), nil
+            val = int64(v.(int32))
         case int64:
-            return int64(v.(int64)), nil
+            val = int64(v.(int64))
         default:
-            return zero, errorTypeError(a.Responses, int64(1), v)
+            err = errorTypeError(a.Responses, int64(1), v)
         }
     case Uint:
         switch v.(type) {
         case uint:
-            return uint64(v.(uint)), nil
+            val = uint64(v.(uint))
         case uint8:
-            return uint64(v.(uint8)), nil
+            val = uint64(v.(uint8))
         case uint16:
-            return uint64(v.(uint16)), nil
+            val = uint64(v.(uint16))
         case uint32:
-            return uint64(v.(uint32)), nil
+            val = uint64(v.(uint32))
         case uint64:
-            return v.(uint64), nil
+            val = v.(uint64)
         default:
-            return zero, errorTypeError(a.Responses, uint64(1), v)
+            err = errorTypeError(a.Responses, uint64(1), v)
         }
     case Float:
         switch v.(type) {
         case float32:
-            return float64(v.(float32)), nil
+            val = float64(v.(float32))
         case float64:
-            return v.(float64), nil
+            val = v.(float64)
         default:
-            return zero, errorTypeError(a.Responses, float64(1), v)
+            err = errorTypeError(a.Responses, float64(1), v)
         }
     case StringSlice:
         fallthrough
@@ -218,9 +235,9 @@ func (a *Answer) typeCast(v interface{}) (interface{}, os.Error) {
     case UintSlice:
         fallthrough
     case FloatSlice:
-        return zero, fmt.Errorf("%s unimplemented", a.typ.String())
+        err = fmt.Errorf("%s unimplemented", a.typ.String())
     }
-    return zero, fmt.Errorf("%s unimplemented", a.typ.String())
+    return
 }
 
 func (a *Answer) tryFirstAnswer() os.Error {
@@ -228,7 +245,7 @@ func (a *Answer) tryFirstAnswer() os.Error {
         if val, err := a.typeCast(a.FirstAnswer); err != nil {
             return err
         } else {
-            a.FirstAnswer = val
+            a.val = val
         }
     }
     return nil
