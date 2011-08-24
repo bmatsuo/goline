@@ -11,6 +11,13 @@ import (
     "os"
 )
 
+func testOptions(T *testing.T) {
+    a := newAnswer(String)
+    if a.Case != NilCase {
+        T.Errorf("New String answer's case is not nil")
+    }
+}
+
 func testGood(T *testing.T, a *Answer, name, in string, v interface{}) os.Error {
     t := a.Type()
     err := a.parse(in)

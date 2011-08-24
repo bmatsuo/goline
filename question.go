@@ -65,12 +65,13 @@ func Ask(dest interface{}, msg string, config func(*Answer)) os.Error {
         fmt.Errorf("Unusable destination")
     }
     a := newAnswer(t)
+    a.Question = msg
     config(a)
 
-    pstr := strings.Trim(msg, "\n") + a.DefaultString()
+    prompt := msg
     r := bufio.NewReader(os.Stdin)
     for {
-        fmt.Print(pstr)
+        fmt.Print(strings.Trim(prompt, "\n") + a.DefaultString())
         var resp []byte
         for cont := true; cont; {
             s, isPrefix, err := r.ReadLine()
@@ -83,12 +84,17 @@ func Ask(dest interface{}, msg string, config func(*Answer)) os.Error {
         if err := a.parse(string(resp)); err != nil {
             switch err.(type) {
             case RecoverableError:
-                fmt.Println(err.String())
+                fmt.Printf("Error: %s\n", err.String())
+                prompt = a.Responses[AskOnError]
                 continue
             default:
                 return err
             }
         }
+
+        // Cast the result from a wide (e.g. 64bit) type to the desired type.
+        // This should not fail under any normal circumstances, so failure
+        // should break the loop.
         var errCast os.Error
         switch dest.(type) {
         case *uint:

@@ -39,10 +39,10 @@ type StringRange struct {
     Min, Max string
 }
 
-func (r UintRange) String() string   { return fmt.Sprintf("[%v, %v]", r.Min, r.Max) }
-func (r IntRange) String() string    { return fmt.Sprintf("[%v, %v]", r.Min, r.Max) }
-func (r FloatRange) String() string  { return fmt.Sprintf("[%v, %v]", r.Min, r.Max) }
-func (r StringRange) String() string { return fmt.Sprintf("[%v, %v]", r.Min, r.Max) }
+func (r UintRange) String() string   { return fmt.Sprintf("range [%v, %v]", r.Min, r.Max) }
+func (r IntRange) String() string    { return fmt.Sprintf("range [%v, %v]", r.Min, r.Max) }
+func (r FloatRange) String() string  { return fmt.Sprintf("range [%v, %v]", r.Min, r.Max) }
+func (r StringRange) String() string { return fmt.Sprintf("range [%#v, %#v]", r.Min, r.Max) }
 
 func (ur UintRange) Has(x interface{}) bool {
     switch x.(type) {
@@ -101,19 +101,21 @@ func (set StringSet) String() string {
     if n == 0 {
         return "{}"
     }
-    length := 2 * n
+    length := 4 * n + 4
     for _, s := range set {
         length += len(s)
     }
     var j int
     p := make([]byte, length)
-    j += copy(p, "[")
+    j += copy(p, "set {")
     for i, s := range set {
+        j += copy(p[j:], []byte{'"'})
         j += copy(p[j:], s)
+        j += copy(p[j:], []byte{'"'})
         if i < n-1 {
             j += copy(p[j:], ", ")
         }
     }
-    j += copy(p[j:], "]")
+    j += copy(p[j:], "}")
     return string(p)
 }
