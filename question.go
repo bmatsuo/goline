@@ -8,22 +8,12 @@ package goline
  */
 import (
     "reflect"
-    "strings"
+    "unicode"
+    //"strings"
     "bufio"
     "fmt"
     "os"
 )
-
-func panicUnrecoverable(err os.Error) {
-    if err != nil {
-        switch err.(type) {
-        case RecoverableError:
-            break
-        default:
-            panic(err)
-        }
-    }
-}
 
 //  Prompt the user for text input. The result is stored in dest, which must
 //  be a pointer to a native Go type (int, uint16, string, float32, ...).
@@ -99,12 +89,13 @@ func Ask(dest interface{}, msg string, config func(*Answer)) (e os.Error) {
 
     prompt := msg
     contFunc := func(err os.Error) {
-        fmt.Printf("Error: %s\n", err.String())
+        Say(fmt.Sprintf("Error: %s\n", err.String()))
         prompt = a.Responses[AskOnError]
     }
     r := bufio.NewReader(os.Stdin)
     for {
-        fmt.Print(strings.Trim(prompt, "\n") + a.defaultString())
+        tail := stringSuffixFunc(prompt, unicode.IsSpace)
+        Say(prompt + a.defaultString(tail))
         var resp []byte
         for cont := true; cont; {
             s, isPrefix, err := r.ReadLine()

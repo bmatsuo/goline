@@ -253,9 +253,9 @@ func (a *Answer) tryFirstAnswer() os.Error {
     return nil
 }
 
-func (a *Answer) defaultString() string {
+func (a *Answer) defaultString(suffix string) string {
     if a.Default != nil {
-        return fmt.Sprintf("|%v|  ", a.Default)
+        return fmt.Sprintf("|%v|%s", a.Default, suffix)
     }
     return ""
 }
@@ -331,7 +331,7 @@ func (a *Answer) parse(in string) os.Error {
         } else if noInput {
             return ErrorEmptyInput(0)
         } else if x, err = strconv.Atoi64(in); err != nil {
-            return err
+            return ErrorParse{in,err}
         }
         val = x
     case Uint:
@@ -341,7 +341,7 @@ func (a *Answer) parse(in string) os.Error {
         } else if noInput {
             return ErrorEmptyInput(0)
         } else if x, err = strconv.Atoui64(in); err != nil {
-            return err
+            return ErrorParse{in,err}
         }
         val = x
     case Float:
@@ -351,7 +351,7 @@ func (a *Answer) parse(in string) os.Error {
         } else if noInput {
             return ErrorEmptyInput(0)
         } else if x, err = strconv.Atof64(in); err != nil {
-            return err
+            return ErrorParse{in,err}
         }
         val = x
     case StringSlice:
