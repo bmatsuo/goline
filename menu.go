@@ -12,15 +12,6 @@ import (
     "os"
 )
 
-type Stringer interface {
-    String() string
-}
-
-var (
-    stringerZero Stringer
-    stringerType = reflect.TypeOf(stringerZero)
-)
-
 func Choose(dest, choices interface{}, label, msg string) os.Error {
     dval := reflect.ValueOf(dest)
     cval := reflect.ValueOf(choices)

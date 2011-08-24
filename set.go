@@ -7,9 +7,7 @@ package goline
  *  Description: 
  */
 import (
-    "reflect"
     "fmt"
-    "os"
 )
 
 // An interface for sets of values.
