@@ -18,14 +18,13 @@ Differences for HighLine users
 "agree" implies the desire of a positive response to the question ("yes").
 The idea is to set up Confirm with positive language and believed value of
 that statement.
-```go
 
+```go
 if shouldProcess := false; !Confirm("Process data? ", shouldProcess, nil) {
     // Process data.
     // ...
 }
 ```
-But Confirm is flexible enough to be used in other manners.
 
 Dependencies
 -------------
