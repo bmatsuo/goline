@@ -91,11 +91,8 @@ var tstring = []string{
     FloatSlice:  "FloatSlice",
 }
 
-func (t Type) String() string { return tstring[t] }
-
-func (t Type) IsSliceType() bool {
-    return t >= StringSlice
-}
+func (t Type) String() string    { return tstring[t] }
+func (t Type) IsSliceType() bool { return t >= StringSlice }
 
 type Answer struct {
     // The "prompt" message for the user.
@@ -110,11 +107,12 @@ type Answer struct {
     FirstAnswer interface{}
     // The default value used when the user inputs an empty string.
     Default interface{}
-    Sep     string
-    set     AnswerSet
-    typ     Type
-    val     interface{}
-    def     interface{}
+    // Separator for list (slice) input (TODO)
+    Sep string
+    set AnswerSet
+    typ Type
+    val interface{}
+    def interface{}
     /*
        inRange bool
        umin    uint64
@@ -243,20 +241,17 @@ func (a *Answer) defaultString() string {
     return ""
 }
 func (a *Answer) tryDefault() (val interface{}, err os.Error) {
-    if a.Default != nil {
-        if val, err = a.typeCast(a.Default); err != nil {
-            return
-        } else {
-            return
-        }
-    }
     val = nil
+    if a.Default != nil {
+        return a.typeCast(a.Default)
+    }
     return
 }
 
 //  Specify a set of answers in which the response much be contained.
 func (a *Answer) In(s AnswerSet) { a.set = s }
 
+//  Returns the Type which is enforced by the Answer.
 func (a *Answer) Type() Type { return a.typ }
 
 var spaceRE = regexp.MustCompile("[ \t]+")

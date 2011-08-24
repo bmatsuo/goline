@@ -20,6 +20,7 @@ var opt = parseFlags()
 func main() {
     var b int32
     err := goline.Ask(&b, "Enter an int:  ", func(a *goline.Answer) {
+        a.Responses[goline.AskOnError] = a.Question
         a.Default = 13
         a.In(goline.IntRange{26, 62})
     })
@@ -30,7 +31,7 @@ func main() {
     var s string
     err = goline.Ask(&s, "Exit?  ", func(a *goline.Answer) {
         a.Default = "yes"
-        a.In(goline.StringSet([]string{"yes", "no"}))
+        a.In(goline.StringSet([]string{"yes", "y", "no", "n"}))
     })
     if err != nil {
         fmt.Printf("Error: %s\n", err.String())
