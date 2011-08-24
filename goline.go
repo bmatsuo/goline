@@ -10,7 +10,24 @@
  *  Description: 
  */
 
-// Package goline manages prompts in the spirit of highline.
+//  Package goline is a command line interfacing (prompting) library inspired
+//  by Ruby's HighLine.
+//
+//  Differences for HighLine users:
+//
+//      - To be more Go-ish, where HighLine uses the term "strip", GoLine uses "trim".
+//  
+//      - Instead of an Agree(question,...) function, GoLine provides a function
+//        `Confirm(question, yesorno) bool`. This is because the author things the term
+//        "agree" implies the desire of a positive response to the question ("yes").
+//        The idea is to set up Confirm with positive language and believed value of
+//        that statement.
+//              if cont := false; !Confirm("Continue anyway? ", cont, nil) {
+//                  os.Exit(1)
+//              }
+//              // Continue.
+//              // ...
+//        But Confirm is flexible enough to be used in other manners.
 package goline
 
 import (

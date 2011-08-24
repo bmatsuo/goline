@@ -1,41 +1,61 @@
-*goline version 0.0_1*
-
 About goline
 =============
 
-    
-
-Dependencies
-=============
-
-    You must have Go installed (http://golang.org/). 
+GoLine is a user interface library that takes much inspiration from
+(the HighLine library of Ruby)
+{http://raveendran.wordpress.com/2008/07/05/highline-ruby-gem/}.
 
 Documentation
 =============
+
+Differences for HighLine users
+------------------------------
+
+* To be more Go-ish, where HighLine uses the term "strip", GoLine uses "trim".
+
+* Instead of an Agree(question,...) function, GoLine provides a function
+`Confirm(question, yesorno) bool`. This is because the author things the term
+"agree" implies the desire of a positive response to the question ("yes").
+The idea is to set up Confirm with positive language and believed value of
+that statement.
+```go
+
+if shouldProcess := false; !Confirm("Process data? ", shouldProcess, nil) {
+    // Process data.
+    // ...
+}
+```
+But Confirm is flexible enough to be used in other manners.
+
+Dependencies
+-------------
+
+You must have Go installed (http://golang.org/). 
+
 Installation
 -------------
 
-    Use goinstall to install goline
+Use goinstall to install goline
 
-        goinstall github.com/bmatsuo/goline
+    goinstall github.com/bmatsuo/goline
 
 General Documentation
 ---------------------
 
-    Use godoc to vew the documentation for goline
+Use godoc to vew the documentation for goline
 
-        godoc github.com/bmatsuo/goline
+    godoc github.com/bmatsuo/goline
 
-    Or alternatively, use a godoc http server
+Or alternatively, use a godoc http server
 
-        godoc -http=:6060
+    godoc -http=:6060
 
-    and view the url http://localhost:6060/pkg/github.com/bmatsuo/goline/
+and view the url http://localhost:6060/pkg/github.com/bmatsuo/goline/
 
 Author
 ======
 
-    Bryan Matsuo <bmatsuo@soe.ucsc.edu>
+Bryan Matsuo <bmatsuo@soe.ucsc.edu>
 
 Copyright & License
 ===================
