@@ -2,8 +2,8 @@ About goline
 =============
 
 GoLine is a user interface library that takes much inspiration from
-(the HighLine library of Ruby)
-{http://raveendran.wordpress.com/2008/07/05/highline-ruby-gem/}.
+[the HighLine library of Ruby]
+(http://raveendran.wordpress.com/2008/07/05/highline-ruby-gem/).
 
 Documentation
 =============
