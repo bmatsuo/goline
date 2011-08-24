@@ -17,13 +17,30 @@ type RecoverableError interface {
     IsRecoverable() bool
 }
 
+type ErrorPrecision struct {
+    Wide, Thin interface{}
+}
+
+func (e ErrorPrecision) String() string {
+    return fmt.Sprintf("Input out of destination range (%v -> %v)", e.Wide, e.Thin)
+}
+func (e ErrorPrecision) IsRecoverable() bool { return true }
+
+
 type ErrorNotInSet struct{ os.Error }
 
 func (err ErrorNotInSet) IsRecoverable() bool { return true }
 
-func (a *Answer) makeErrorNotInSet(r Responses, val interface{}) ErrorNotInSet {
+func (a *Answer) makeErrorNotInSet(val interface{}) ErrorNotInSet {
     return ErrorNotInSet{
-        fmt.Errorf("%s %s (%#v)", r[NotInSet], a.set.String(), val)}
+        fmt.Errorf("%s %s (%#v)", a.Responses[NotInSet], a.set.String(), val)}
+}
+
+func (a *Answer) makeTypeError(expect, recv interface{}) os.Error {
+    return fmt.Errorf("%s (%s != %s)",
+        a.Responses[InvalidType],
+        reflect.ValueOf(recv).Kind().String(),
+        reflect.ValueOf(expect).Kind().String())
 }
 
 /*
@@ -52,8 +69,8 @@ func errorEmptyRange(min, max interface{}) os.Error {
     return fmt.Errorf("Range max is less than min (%v < %v)", min, max)
 }
 
-func errorTypeError(r Responses, expect, recv interface{}) os.Error {
-    return fmt.Errorf("%s (%s != %s)",
-        r[InvalidType], reflect.ValueOf(recv).Kind().String(), reflect.ValueOf(expect).Kind().String())
+func errorSetMemberType(set, member interface{}) os.Error {
+    return fmt.Errorf("Set type %v cannot contain type %v",
+        reflect.TypeOf(set).String(),
+        reflect.TypeOf(member).String())
 }
-

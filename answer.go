@@ -127,6 +127,8 @@ type Answer struct {
     Default interface{}
     // Separator for list (slice) input (TODO)
     Sep string
+    // Called when an error forces the prompt to halt without a value.
+    Panic func(os.Error)
     set AnswerSet
     typ Type
     val interface{}
@@ -187,7 +189,7 @@ func (a *Answer) typeCast(v interface{}) (val interface{}, err os.Error) {
         case string:
             val = v
         default:
-            err = errorTypeError(a.Responses, "", v)
+            err = a.makeTypeError("", v)
         }
     case Int:
         switch v.(type) {
@@ -202,7 +204,7 @@ func (a *Answer) typeCast(v interface{}) (val interface{}, err os.Error) {
         case int64:
             val = int64(v.(int64))
         default:
-            err = errorTypeError(a.Responses, int64(1), v)
+            err = a.makeTypeError(int64(1), v)
         }
     case Uint:
         switch v.(type) {
@@ -217,7 +219,7 @@ func (a *Answer) typeCast(v interface{}) (val interface{}, err os.Error) {
         case uint64:
             val = v.(uint64)
         default:
-            err = errorTypeError(a.Responses, uint64(1), v)
+            err = a.makeTypeError(uint64(1), v)
         }
     case Float:
         switch v.(type) {
@@ -226,7 +228,7 @@ func (a *Answer) typeCast(v interface{}) (val interface{}, err os.Error) {
         case float64:
             val = v.(float64)
         default:
-            err = errorTypeError(a.Responses, float64(1), v)
+            err = a.makeTypeError(float64(1), v)
         }
     case StringSlice:
         fallthrough
@@ -372,7 +374,7 @@ func (a *Answer) parse(in string) os.Error {
         fallthrough
     case Float:
         if !a.setHas(val) {
-            return a.makeErrorNotInSet(a.Responses, val)
+            return a.makeErrorNotInSet(val)
         }
     case StringSlice:
         fallthrough
@@ -390,4 +392,95 @@ func (a *Answer) parse(in string) os.Error {
     }
 
     return err
+}
+
+// Cast a value result from a wide (e.g. 64bit) type to the desired type.
+// This should not fail under any normal circumstances, so failure
+// should break the loop.
+func (a *Answer) setDest(dest interface{}) os.Error {
+    switch a.Type() {
+    case Uint:
+        switch dest.(type) {
+        case *uint:
+            d := dest.(*uint)
+            *(d) = uint(a.val.(uint64))
+            if x := uint64(*(d)); x != a.val.(uint64) {
+                return ErrorPrecision{a.val.(uint64), x}
+            }
+        case *uint8:
+            d := dest.(*uint8)
+            *(d) = uint8(a.val.(uint64))
+            if x := uint64(*(d)); x != a.val.(uint64) {
+                return ErrorPrecision{a.val.(uint64), x}
+            }
+        case *uint16:
+            d := dest.(*uint16)
+            *(d) = uint16(a.val.(uint64))
+            if x := uint64(*(d)); x != a.val.(uint64) {
+                return ErrorPrecision{a.val.(uint64), x}
+            }
+        case *uint32:
+            d := dest.(*uint32)
+            *(d) = uint32(a.val.(uint64))
+            if x := uint64(*(d)); x != a.val.(uint64) {
+                return ErrorPrecision{a.val.(uint64), x}
+            }
+        case *uint64:
+            *(dest.(*uint64)) = a.val.(uint64)
+        default:
+            return fmt.Errorf("Unexpected cast type")
+        }
+    case Int:
+        switch dest.(type) {
+        case *int:
+            d := dest.(*int)
+            *(d) = int(a.val.(int64))
+            if x := int64(*(d)); x != a.val.(int64) {
+                return ErrorPrecision{a.val.(int64), x}
+            }
+        case *int8:
+            d := dest.(*int8)
+            *(d) = int8(a.val.(int64))
+            if x := int64(*(d)); x != a.val.(int64) {
+                return ErrorPrecision{a.val.(int64), x}
+            }
+        case *int16:
+            d := dest.(*int16)
+            *(d) = int16(a.val.(int64))
+            if x := int64(*(d)); x != a.val.(int64) {
+                return ErrorPrecision{a.val.(int64), x}
+            }
+        case *int32:
+            d := dest.(*int32)
+            *(d) = int32(a.val.(int64))
+            if x := int64(*(d)); x != a.val.(int64) {
+                return ErrorPrecision{a.val.(int64), x}
+            }
+        case *int64:
+            *(dest.(*int64)) = a.val.(int64)
+        default:
+            return fmt.Errorf("Unexpected cast type")
+        }
+    case Float:
+        switch dest.(type) {
+        case *float32:
+            d := dest.(*float32)
+            *(d) = float32(a.val.(float64))
+            if x := float64(*(d)); x != a.val.(float64) {
+                return ErrorPrecision{a.val.(float64), x}
+            }
+        case *float64:
+            *(dest.(*float64)) = a.val.(float64)
+        default:
+            return fmt.Errorf("Unexpected cast type")
+        }
+    case String:
+        switch dest.(type) {
+        case *string:
+            *(dest.(*string)) = a.val.(string)
+        default:
+            return fmt.Errorf("Unexpected cast type")
+        }
+    }
+    return nil
 }

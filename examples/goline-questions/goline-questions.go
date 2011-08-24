@@ -13,6 +13,7 @@ package main
 import (
     "goline"
     "fmt"
+    "os"
 )
 
 var opt = parseFlags()
@@ -22,35 +23,37 @@ func main() {
     for cont {
         // "Read a byte" but short-circuit the prompt.
         var a uint8
-        err := goline.Ask(&a, "This should not appear:  ", func(a *goline.Answer) {
+        goline.Ask(&a, "This should not appear:  ", func(a *goline.Answer) {
             a.FirstAnswer = uint(0xFF)
+            fmt.Println(a.FirstAnswer)
             a.In(goline.UintRange{200, 255})
+            a.Panic = func(err os.Error) {
+                fmt.Printf("Error: %s\n", err.String())
+            }
         })
-        if err != nil {
-            fmt.Printf("Error: %s\n", err.String())
-        }
+        fmt.Printf("byte 0x%X\n", a)
 
         // Read a bounded integer.
         var b int32
-        err = goline.Ask(&b, "Enter an int:  ", func(a *goline.Answer) {
+        goline.Ask(&b, "Enter an int:  ", func(a *goline.Answer) {
             a.Responses[goline.AskOnError] = a.Question
             a.Default = 13
             a.In(goline.IntRange{26, 62})
+            a.Panic = func(err os.Error) {
+                fmt.Printf("Error: %s\n", err.String())
+            }
         })
-        if err != nil {
-            fmt.Printf("Error: %s\n", err.String())
-        }
         fmt.Printf("Integer %d\n", b)
 
         // Read a string contained in a set of possible values.
         var s string
-        err = goline.Ask(&s, "Exit?  ", func(a *goline.Answer) {
+        goline.Ask(&s, "Exit?  ", func(a *goline.Answer) {
             a.Default = "yes"
             a.In(goline.StringSet([]string{"yes", "y", "no", "n"}))
+            a.Panic = func(err os.Error) {
+                fmt.Printf("Error: %s\n", err.String())
+            }
         })
-        if err != nil {
-            fmt.Printf("Error: %s\n", err.String())
-        }
         fmt.Printf("String %s\n", s)
         switch s {
         case "yes":
