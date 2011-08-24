@@ -331,7 +331,7 @@ func (a *Answer) parse(in string) os.Error {
         } else if noInput {
             return ErrorEmptyInput(0)
         } else if x, err = strconv.Atoi64(in); err != nil {
-            return ErrorParse{in,err}
+            return a.makeTypeError(x,in)
         }
         val = x
     case Uint:
@@ -341,7 +341,7 @@ func (a *Answer) parse(in string) os.Error {
         } else if noInput {
             return ErrorEmptyInput(0)
         } else if x, err = strconv.Atoui64(in); err != nil {
-            return ErrorParse{in,err}
+            return a.makeTypeError(x,in)
         }
         val = x
     case Float:
@@ -351,7 +351,7 @@ func (a *Answer) parse(in string) os.Error {
         } else if noInput {
             return ErrorEmptyInput(0)
         } else if x, err = strconv.Atof64(in); err != nil {
-            return ErrorParse{in,err}
+            return a.makeTypeError(x,in)
         }
         val = x
     case StringSlice:

@@ -28,14 +28,6 @@ func panicUnrecoverable(err os.Error) {
     }
 }
 
-type ErrorParse struct {
-    string
-    os.Error
-}
-
-func (e ErrorParse) String() string      { return fmt.Sprintf("Parsing %#v", e.string) }
-func (e ErrorParse) IsRecoverable() bool { return true }
-
 type ErrorPrecision struct {
     Wide, Thin interface{}
 }
