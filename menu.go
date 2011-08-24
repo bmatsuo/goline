@@ -13,8 +13,9 @@ import (
     "os"
 )
 
-var errorNoChoices = os.NewError("No Menu choices given")
-
+//  Prompt the user to choose from a list of choices. Return the index
+//  of the chosen item, and the item itself in an empty interface. See
+//  Menu for more information about configuring the prompt.
 func Choose(config func(*Menu)) (i int, v interface{}) {
     i = -1
     m := newMenu()
@@ -208,8 +209,8 @@ func (m *Menu) Selections() (choices []string, selections []string, tr map[strin
     return
 }
 
-// Make a []Stringer with objects from a slice of arbitrary (interface) type.
-// This should be called before calling m.Choice() to add single choices.
+//  Make a []Stringer with objects from a slice of arbitrary (interface) type.
+//  This should be called before calling m.Choice() to add single choices.
 func (m *Menu) SetChoices(cs interface{}) {
     // Zero out the old choice list (even if there is an error)
     var zero []Stringer
@@ -229,9 +230,9 @@ func (m *Menu) SetChoices(cs interface{}) {
     }
 }
 
-// Append a choice (either string or Stringer) to m.Choices.
+//  Append a choice (either string or Stringer) to m.Choices.
 func (m *Menu) Choice(s interface{}) { m.Choices = append(m.Choices, makeStringer(s)) }
-// Prepend a choice (either string or Stringer) to the front (top) of m.Choices.
+//  Prepend a choice (either string or Stringer) to the front (top) of m.Choices.
 func (m *Menu) ChoicePre(s interface{}) {
     m.Choices = append(m.Choices, zeroStringer)
     if m.Len() > 1 {

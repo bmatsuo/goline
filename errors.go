@@ -74,3 +74,5 @@ func errorSetMemberType(set, member interface{}) os.Error {
         reflect.TypeOf(set).String(),
         reflect.TypeOf(member).String())
 }
+
+var errorNoChoices = os.NewError("No Menu choices given")
