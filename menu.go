@@ -13,7 +13,45 @@ import (
     "os"
 )
 
-func Choose(dest, choices interface{}, label, msg string) os.Error {
+var errorNoChoices = os.NewError("No Menu choices given")
+
+func Choose(config func(*Menu)) (i int, v interface{}) {
+    i = -1
+    m := newMenu()
+    config(m)
+    if m.Len() == 0 {
+        if m.Panic != nil {
+            m.Panic(errorNoChoices)
+            return
+        }
+    }
+
+    if len(m.Header) > 0 {
+        Say(m.Header)
+    }
+
+    raw, selections, tr := m.Selections()
+    List(raw, m.ListMode, nil)
+    ok := true
+    var resp string
+    Ask(&resp, m.Question, func(a *Answer) {
+        a.In(StringSet(selections))
+        a.Panic = func(err os.Error) {
+            ok = false
+            m.Panic(err)
+        }
+    })
+    if !ok {
+        return
+    }
+
+    i = tr[resp]
+    v = m.Choices[i]
+
+    return
+}
+
+func ChooseOLD(dest, choices interface{}, label, msg string) os.Error {
     dval := reflect.ValueOf(dest)
     cval := reflect.ValueOf(choices)
     if k := cval.Kind(); k != reflect.Slice {
@@ -105,18 +143,20 @@ func getLetterIndex(i int) string {
     return string(p)
 }
 
-func (m *Menu) getIndex(i int) string {
-    var ind string
+func (m *Menu) getIndexNoSuffix(i int) string {
     switch {
     case m.UseLiteral():
-        ind = m.Index
+        return m.Index
     case m.UseNumber():
-        ind = strconv.Itoa(i)
+        return strconv.Itoa(i)
     case m.UseLetter():
-        ind = getLetterIndex(i)
-    default:
-        panic("Index option error.")
+        return getLetterIndex(i)
     }
+    panic("Index option error.")
+}
+
+func (m *Menu) getIndex(i int) string {
+    ind := m.getIndexNoSuffix(i)
 
     var s string
     switch {
@@ -165,6 +205,16 @@ type Menu struct {
     // The index and suffix used for all choices if IndexMode is Literal.
     Index       string
     IndexSuffix string
+    // A handler function for any errors encountered.
+    Panic func(os.Error)
+}
+
+func newMenu() *Menu {
+    m := new(Menu)
+    m.ListMode = Rows
+    m.IndexMode = Number
+    m.SelectMode = IndexSelect | NameSelect
+    return m
 }
 
 //  The number of choices currently in the Menu.
@@ -173,7 +223,7 @@ func (m *Menu) Len() int { return len(m.Choices) }
 //  Create a list of menu items (with indices) and a translation table that
 //  maps menu selections (possibly name and index) to an integer index into
 //  m.Choices.
-func (m *Menu) Selections() (choices []string, tr map[string]int) {
+func (m *Menu) Selections() (choices []string, selections []string, tr map[string]int) {
     selectIndices, selectNames := m.SelectIndices(), m.SelectNames()
     if m.UseLiteral() {
         // Can't select indices if all choices have the same index.
@@ -185,20 +235,22 @@ func (m *Menu) Selections() (choices []string, tr map[string]int) {
     if selectIndices && selectNames {
         trSize += n
     }
-    tr = make(map[string]int, trSize)
     choices = make([]string, n)
+    selections = make([]string, 0, trSize)
+    tr = make(map[string]int, trSize)
 
     addSelection := func(i int, s string) {
         if _, present := tr[s]; present {
             panic(fmt.Errorf("Selection conflict %s", s))
         }
         tr[s] = i
+        selections = append(selections, s)
     }
 
     for i := range m.Choices {
         choices[i] = m.getIndex(i) + m.Choices[i].String()
         if selectIndices {
-            addSelection(i, m.getIndex(i))
+            addSelection(i, m.getIndexNoSuffix(i))
         }
         if selectNames {
             addSelection(i, m.Choices[i].String())
