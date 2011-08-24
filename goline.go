@@ -12,6 +12,7 @@
 
 // Package goline manages prompts in the spirit of highline.
 package goline
+
 import (
     "reflect"
     "strings"
@@ -28,14 +29,36 @@ func Say(msg string) (int, os.Error) {
     return fmt.Println(msg)
 }
 
+func SayTrimmed(msg string) (int, os.Error) {
+    return Say(strings.TrimRightFunc(msg, unicode.IsSpace))
+}
+
 type Stringer interface {
     String() string
 }
 
 var (
-    stringerZero Stringer
-    stringerType = reflect.TypeOf(stringerZero)
+    zeroStringer Stringer
+    typeStringer = reflect.TypeOf(zeroStringer)
 )
+
+type simpleString string
+
+func (s simpleString) String() string { return string(s) }
+
+var zeroSimpleString simpleString
+
+func makeStringer(s interface{}) Stringer {
+    switch s.(type) {
+    case string:
+        return simpleString(s.(string))
+    case Stringer:
+        return s.(Stringer)
+    default:
+        panic("Value must be type 'string' or 'Stringer'")
+    }
+    return zeroStringer
+}
 
 type ListMode uint
 
@@ -90,7 +113,7 @@ func List(items interface{}, mode ListMode, option interface{}) {
         if ncols <= 1 {
             // Just print rows if no more than 1 column fits.
             for i := range strs {
-                Say(strings.TrimRightFunc(strs[i], unicode.IsSpace))
+                SayTrimmed(strs[i])
             }
             break
         }
@@ -105,12 +128,12 @@ func List(items interface{}, mode ListMode, option interface{}) {
         switch mode {
         case ColumnsAcross:
             for i := 0; i < n; i += ncols {
-                end := i+ncols
+                end := i + ncols
                 if end > n {
                     end = n
                 }
                 row := strs[i:end]
-                Say(strings.TrimRightFunc(strings.Join(row, " "), unicode.IsSpace))
+                SayTrimmed(strings.Join(row, " "))
             }
         case ColumnsDown:
             for i := 0; i < nrows; i++ {
@@ -122,13 +145,13 @@ func List(items interface{}, mode ListMode, option interface{}) {
                     }
                     row = append(row, strs[index])
                 }
-                Say(strings.TrimRightFunc(strings.Join(row, " "), unicode.IsSpace))
+                SayTrimmed(strings.Join(row, " "))
             }
         }
     case Inline:
         n := len(strs)
         if n == 1 {
-            Say(strings.TrimRightFunc(strs[0], unicode.IsSpace))
+            SayTrimmed(strs[0])
             break
         }
         join := " or "
@@ -143,13 +166,44 @@ func List(items interface{}, mode ListMode, option interface{}) {
             Say(strings.Join([]string{strs[n-2], join, strs[n-2], "\n"}, ""))
             break
         }
-        strs[n-1] = join + strings.TrimRightFunc(strs[n-1], unicode.IsSpace)
-        Say(strings.Join(strs, ", ") + "\n")
+        strs[n-1] = join + strs[n-1]
+        SayTrimmed(strings.Join(strs, ", "))
     case Rows:
         for i := range strs {
-            Say(strings.TrimRightFunc(strs[i], unicode.IsSpace))
+            SayTrimmed(strs[i])
         }
     default:
         panic(os.NewError("Unknown mode"))
     }
+}
+
+func Confirm(question string, yes bool, config func(a *Answer)) bool {
+    def := "no"
+    if yes {
+        def = "yes"
+    }
+
+    var okstr string
+    var err os.Error
+    Ask(&okstr, question, func(a *Answer) {
+        a.Default = def
+        a.In(StringSet{"yes", "y", "no", "n"})
+        if config != nil {
+            config(a)
+        }
+        if a.Panic != nil {
+            f := a.Panic
+            a.Panic = func(e os.Error) {
+                err = e
+                f(e)
+            }
+        }
+    })
+    if err != nil {
+        return false
+    }
+    if okstr[0] == 'y' {
+        return true
+    }
+    return false
 }

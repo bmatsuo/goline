@@ -45,9 +45,11 @@ func Ask(dest interface{}, msg string, config func(*Answer)) (e os.Error) {
         }
     }()
     if k := reflect.TypeOf(dest).Kind(); k != reflect.Ptr && k != reflect.Slice {
-        panic(fmt.Errorf("Ask(...) requires a Ptr type, not %s", k.String()))
+        panicUnrecoverable(fmt.Errorf("Ask(...) requires a Ptr type, not %s", k.String()))
+        return
     } else if k == reflect.Slice {
-        panic(fmt.Errorf("Ask(...) can not currently assign to slices."))
+        panicUnrecoverable(fmt.Errorf("Ask(...) can not currently assign to slices."))
+        return
     }
 
     var t Type
@@ -83,7 +85,9 @@ func Ask(dest interface{}, msg string, config func(*Answer)) (e os.Error) {
     }
     a = newAnswer(t)
     a.Question = msg
-    config(a)
+    if config != nil {
+        config(a)
+    }
 
     if err := a.tryFirstAnswer(); err == nil && a.val != nil {
         if err := a.setDest(dest); err != nil {
@@ -104,11 +108,12 @@ func Ask(dest interface{}, msg string, config func(*Answer)) (e os.Error) {
         var resp []byte
         for cont := true; cont; {
             s, isPrefix, err := r.ReadLine()
-            cont = isPrefix
             if err != nil {
-                return err
+                panicUnrecoverable(err)
+                return
             }
             resp = append(resp, s...)
+            cont = isPrefix
         }
         if err := a.parse(string(resp)); err != nil {
             panicUnrecoverable(err)

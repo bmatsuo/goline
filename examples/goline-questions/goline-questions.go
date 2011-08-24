@@ -46,20 +46,15 @@ func main() {
         fmt.Printf("Integer %d\n", b)
 
         // Read a string contained in a set of possible values.
-        var s string
-        goline.Ask(&s, "Exit?  ", func(a *goline.Answer) {
-            a.Default = "yes"
-            a.In(goline.StringSet([]string{"yes", "y", "no", "n"}))
+        var broken bool
+        cont = !goline.Confirm("Exit?  ", true, func(a *goline.Answer) {
             a.Panic = func(err os.Error) {
+                if err == os.EOF {
+                    broken = true
+                }
                 fmt.Printf("Error: %s\n", err.String())
             }
         })
-        fmt.Printf("String %s\n", s)
-        switch s {
-        case "yes":
-            fallthrough
-        case "y":
-            cont = false
-        }
+        cont = cont && !broken
     }
 }
