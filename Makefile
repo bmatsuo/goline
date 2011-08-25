@@ -9,6 +9,7 @@ include $(GOROOT)/src/Make.inc
 
 TARG=goline
 GOFILES=\
+		strings.go\
 		errors.go\
 		set.go\
 		question.go\

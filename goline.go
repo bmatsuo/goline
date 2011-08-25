@@ -10,25 +10,20 @@
  *  Description: 
  */
 
-//  Package goline is a command line interfacing (prompting) library inspired
-//  by Ruby's HighLine.
-//
-//  Differences for HighLine users:
-//
-//      - To be more Go-ish, where HighLine uses the term "strip", the package
-//        uses "trim".
-//  
-//      - Instead of an Agree(question,...) function, the package provides a
-//        function `Confirm(question, yesorno) bool`. This is because the
-//        author things the term "agree" implies the desire of a positive
-//        response to the question ("yes"). The idea is to set up Confirm with
-//        positive language and believed truth value of that statement.
-//              if cont := false; !Confirm("Continue anyway? ", cont, nil) {
-//                  os.Exit(1)
-//              }
-//              // Continue.
-//              // ...
-//        But Confirm is flexible enough to be used in other manners.
+/*
+Package goline is a command line interfacing (prompting) library inspired
+by Ruby's HighLine.
+
+Differences for HighLine users:
+
+    - To be more Go-ish, where HighLine uses the term "strip", the package
+      uses "trim".
+
+    - Instead of an `Agree(question, config) bool` function, the package
+      provides a function `Confirm(question, yesorno, config) bool`. This is
+      because the author things the term "agree" implies the desire of a
+      positive response to the question ("yes").
+*/
 package goline
 
 import (
@@ -39,67 +34,6 @@ import (
     "utf8"
     "fmt"
     "os"
-)
-
-//  Returns the index i of the longest terminal substring s[i:] such that f
-//  returns true for all runes in s[i:]. Returns -1 if there is no such i.
-func stringSuffixIndexFunc(s string, f func(c int) bool) (i int) {
-    var hasSuffix bool
-    i = strings.LastIndexFunc(s, func(c int) (done bool) {
-        if done = !f(c); !hasSuffix {
-            hasSuffix = !done
-        }
-        return
-    })
-    if i++; !hasSuffix {
-        i = -1
-    }
-    return
-}
-
-//  Return the suffix string corresponding to the same call to
-//  stringSuffixIndexFunc.
-func stringSuffixFunc(s string, f func(c int) bool) (suff string) {
-    if i := stringSuffixIndexFunc(s, f); i >= 0 {
-        suff = s[i:]
-    }
-    return
-}
-
-type Stringer interface {
-    String() string
-}
-
-var (
-    zeroStringer Stringer
-    typeStringer = reflect.TypeOf(zeroStringer)
-)
-
-type simpleString string
-
-func (s simpleString) String() string { return string(s) }
-
-var zeroSimpleString simpleString
-
-func makeStringer(s interface{}) Stringer {
-    switch s.(type) {
-    case string:
-        return simpleString(s.(string))
-    case Stringer:
-        return s.(Stringer)
-    default:
-        panic("Value must be type 'string' or 'Stringer'")
-    }
-    return zeroStringer
-}
-
-type ListMode uint
-
-const (
-    ColumnsAcross ListMode = iota
-    ColumnsDown
-    Inline
-    Rows
 )
 
 //  A simple function for printing (single-line) messages and prompts to
@@ -122,6 +56,15 @@ func Say(msg string) (int, os.Error) {
 func SayTrimmed(msg string) (int, os.Error) {
     return Say(strings.TrimRightFunc(msg, unicode.IsSpace))
 }
+
+type ListMode uint
+
+const (
+    ColumnsAcross ListMode = iota
+    ColumnsDown
+    Inline
+    Rows
+)
 
 //  Print a list of items to os.Stdout. The list can be formatted into rows
 //  or into a matrix using the ListMode argument. The third argument has

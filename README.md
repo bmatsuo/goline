@@ -8,16 +8,6 @@ Package goline (GoLine) is a user interface (prompting) library inspired by
 Documentation
 =============
 
-Differences for HighLine users
-------------------------------
-
-* To be more Go-ish, where HighLine uses the term "strip", GoLine uses "trim".
-
-* Instead of an Agree(question,...) function, GoLine provides a function
-`Confirm(question, yesorno, ...) bool`. This is because the author things the term
-"agree" implies the desire of a positive response to the question ("yes").
-See the godoc documentation for more information.
-
 Dependencies
 -------------
 
