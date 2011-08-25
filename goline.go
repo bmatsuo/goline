@@ -66,17 +66,6 @@ func stringSuffixFunc(s string, f func(c int) bool) (suff string) {
     return
 }
 
-func Say(msg string) (int, os.Error) {
-    if c, _ := utf8.DecodeLastRuneInString(msg); unicode.IsSpace(c) {
-        return fmt.Print(msg)
-    }
-    return fmt.Println(msg)
-}
-
-func SayTrimmed(msg string) (int, os.Error) {
-    return Say(strings.TrimRightFunc(msg, unicode.IsSpace))
-}
-
 type Stringer interface {
     String() string
 }
@@ -113,6 +102,34 @@ const (
     Rows
 )
 
+//  A simple function for printing (single-line) messages and prompts to
+//  os.Stdout. If trailing whitespace is present in the given message, it
+//  will be printed as given. Otherwise, a trailing newline '\n' will be
+//  printed after the message.
+//      goline.Say("Hello, World!") // Prints "Hello, World!\n"
+//      goline.Say("Hello, World! ") // Prints "Hello, World! "
+//  See also, SayTrimmed.
+func Say(msg string) (int, os.Error) {
+    if c, _ := utf8.DecodeLastRuneInString(msg); unicode.IsSpace(c) {
+        return fmt.Print(msg)
+    }
+    return fmt.Println(msg)
+}
+
+//  Like Say, but trailing whitespace is removed from the message before
+//  an internal call to Say is made.
+//      goline.SayTrimmed("Hello, World! \n\t\t") // Prints "Hello, World!\n"
+func SayTrimmed(msg string) (int, os.Error) {
+    return Say(strings.TrimRightFunc(msg, unicode.IsSpace))
+}
+
+//  Print a list of items to os.Stdout. The list can be formatted into rows
+//  or into a matrix using the ListMode argument. The third argument has
+//  different meaning (and type) depending on the mode.
+//      MODE        OPTION  DEFAULT     MEANING
+//      Rows        n/a
+//      Inline      string  " or "      Join terminal element (e.g. "a, b, or c")
+//      Columns*    int     80          Maximum line width
 func List(items interface{}, mode ListMode, option interface{}) {
     ival := reflect.ValueOf(items)
     itype := ival.Type()
@@ -225,6 +242,19 @@ func List(items interface{}, mode ListMode, option interface{}) {
 //  be a pointer to a native Go type (int, uint16, string, float32, ...).
 //  Slice types are not currently supported. List input must be done with a
 //  *string destination and post-processing.
+//      package main
+//      import (
+//          "goline"
+//          "os"
+//      )
+//      func main() {
+//          timeout := 5e3
+//          goline.Ask(&timeout, "Timeout (ms)? ", func(q *goline.Question) {
+//              q.Default = timeout
+//              q.In(goline.IntBoundedStrictly(goline.Above, 0))
+//              q.Panic = func(e os.Error) { panic(e) }
+//          })
+//      }
 func Ask(dest interface{}, msg string, config func(*Question)) (e os.Error) {
     var q *Question
     defer func() {
@@ -331,6 +361,15 @@ func Ask(dest interface{}, msg string, config func(*Question)) (e os.Error) {
     return
 }
 
+//  Corresponds to HighLine's `agree` method. A simple wrapper around Ask for
+//  yes/no questions. Confirm is given a string to prompt the user with, and a
+//  default (or expected) value (yes=true, no=false). Returns the value of the
+//  input.
+//      if Confirm("Fetch data from the server? ", true, nil) {
+//          var server string
+//          Ask(&server, "Server (host:port)? ", nil)
+//          // Fetch some data...
+//      }
 func Confirm(question string, yes bool, config func(*Question)) bool {
     def := "no"
     if yes {
@@ -360,4 +399,43 @@ func Confirm(question string, yes bool, config func(*Question)) bool {
         return true
     }
     return false
+}
+
+//  Prompt the user to choose from a list of choices. Return the index
+//  of the chosen item, and the item itself in an empty interface. See
+//  Menu for more information about configuring the prompt.
+func Choose(config func(*Menu)) (i int, v interface{}) {
+    i = -1
+    m := newMenu()
+    config(m)
+    if m.Len() == 0 {
+        if m.Panic != nil {
+            m.Panic(errorNoChoices)
+            return
+        }
+    }
+
+    if len(m.Header) > 0 {
+        Say(m.Header)
+    }
+
+    raw, selections, tr := m.Selections()
+    List(raw, m.ListMode, nil)
+    ok := true
+    var resp string
+    Ask(&resp, m.Question, func(q *Question) {
+        q.In(StringSet(selections))
+        q.Panic = func(err os.Error) {
+            ok = false
+            m.Panic(err)
+        }
+    })
+    if !ok {
+        return
+    }
+
+    i = tr[resp]
+    v = m.Choices[i]
+
+    return
 }

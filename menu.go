@@ -13,45 +13,6 @@ import (
     "os"
 )
 
-//  Prompt the user to choose from a list of choices. Return the index
-//  of the chosen item, and the item itself in an empty interface. See
-//  Menu for more information about configuring the prompt.
-func Choose(config func(*Menu)) (i int, v interface{}) {
-    i = -1
-    m := newMenu()
-    config(m)
-    if m.Len() == 0 {
-        if m.Panic != nil {
-            m.Panic(errorNoChoices)
-            return
-        }
-    }
-
-    if len(m.Header) > 0 {
-        Say(m.Header)
-    }
-
-    raw, selections, tr := m.Selections()
-    List(raw, m.ListMode, nil)
-    ok := true
-    var resp string
-    Ask(&resp, m.Question, func(q *Question) {
-        q.In(StringSet(selections))
-        q.Panic = func(err os.Error) {
-            ok = false
-            m.Panic(err)
-        }
-    })
-    if !ok {
-        return
-    }
-
-    i = tr[resp]
-    v = m.Choices[i]
-
-    return
-}
-
 //  Construct an IndexMode by combining index options and suffix options.
 //      mode1 := Literal | DefaultSuffix // Items like "- Hello"
 //      mode2 := Number | LiteralSuffix // Items like "1::Hello"
