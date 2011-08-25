@@ -23,7 +23,7 @@ func main() {
     for cont {
         // "Read a byte" but short-circuit the prompt.
         var a uint8
-        goline.Ask(&a, "This should not appear:  ", func(a *goline.Answer) {
+        goline.Ask(&a, "This should not appear:  ", func(a *goline.Question) {
             a.FirstAnswer = uint(0xFF)
             fmt.Println(a.FirstAnswer)
             a.In(goline.UintRange{200, 255})
@@ -35,7 +35,7 @@ func main() {
 
         // Read a bounded integer.
         var b int32
-        goline.Ask(&b, "Enter an int:  ", func(a *goline.Answer) {
+        goline.Ask(&b, "Enter an int:  ", func(a *goline.Question) {
             a.Responses[goline.AskOnError] = a.Question
             a.Default = 13
             a.In(goline.IntRange{26, 62})
@@ -47,7 +47,7 @@ func main() {
 
         // Read a string contained in a set of possible values.
         var broken bool
-        cont = !goline.Confirm("Exit?  ", true, func(a *goline.Answer) {
+        cont = !goline.Confirm("Exit?  ", true, func(a *goline.Question) {
             a.Panic = func(err os.Error) {
                 if err == os.EOF {
                     broken = true
