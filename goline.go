@@ -374,7 +374,7 @@ func Choose(config func(*Menu)) (i int, v interface{}) {
     config(m)
     if m.Len() == 0 {
         if m.Panic != nil {
-            m.Panic(errorNoChoices)
+            m.Panic(ErrorNoChoices)
             return
         }
     }

@@ -55,7 +55,7 @@ func (ur UintRange) Has(x interface{}) bool {
         y := x.(uint64)
         return y >= ur.Min && y <= ur.Max
     }
-    panic(errorSetMemberType(ur, x))
+    panic(makeErrorMemberType(ur, x))
 }
 func (ur IntRange) Has(x interface{}) bool {
     switch x.(type) {
@@ -63,7 +63,7 @@ func (ur IntRange) Has(x interface{}) bool {
         y := x.(int64)
         return y >= ur.Min && y <= ur.Max
     }
-    panic(errorSetMemberType(ur, x))
+    panic(makeErrorMemberType(ur, x))
 }
 func (ur FloatRange) Has(x interface{}) bool {
     switch x.(type) {
@@ -71,7 +71,7 @@ func (ur FloatRange) Has(x interface{}) bool {
         y := x.(float64)
         return y >= ur.Min && y <= ur.Max
     }
-    panic(errorSetMemberType(ur, x))
+    panic(makeErrorMemberType(ur, x))
 }
 func (ur StringRange) Has(x interface{}) bool {
     switch x.(type) {
@@ -79,7 +79,7 @@ func (ur StringRange) Has(x interface{}) bool {
         y := x.(string)
         return y >= ur.Min && y <= ur.Max
     }
-    panic(errorSetMemberType(ur, x))
+    panic(makeErrorMemberType(ur, x))
 }
 
 type StringSet []string
@@ -95,7 +95,7 @@ func (set StringSet) Has(x interface{}) bool {
         }
         return false
     }
-    panic(errorSetMemberType(set, x))
+    panic(makeErrorMemberType(set, x))
 }
 
 func (set StringSet) String() string {
@@ -175,7 +175,7 @@ func (r UintBounded) Has(x interface{}) bool {
             return y <= r.X
         }
     }
-    panic(errorSetMemberType(r, x))
+    panic(makeErrorMemberType(r, x))
 }
 func (r IntBounded) Has(x interface{}) bool {
     switch x.(type) {
@@ -188,7 +188,7 @@ func (r IntBounded) Has(x interface{}) bool {
             return y <= r.X
         }
     }
-    panic(errorSetMemberType(r, x))
+    panic(makeErrorMemberType(r, x))
 }
 func (r FloatBounded) Has(x interface{}) bool {
     switch x.(type) {
@@ -201,7 +201,7 @@ func (r FloatBounded) Has(x interface{}) bool {
             return y <= r.X
         }
     }
-    panic(errorSetMemberType(r, x))
+    panic(makeErrorMemberType(r, x))
 }
 func (r StringBounded) Has(x interface{}) bool {
     switch x.(type) {
@@ -214,7 +214,7 @@ func (r StringBounded) Has(x interface{}) bool {
             return y <= r.X
         }
     }
-    panic(errorSetMemberType(r, x))
+    panic(makeErrorMemberType(r, x))
 }
 
 type UintBoundedStrictly UintBounded
@@ -240,7 +240,7 @@ func (r UintBoundedStrictly) Has(x interface{}) bool {
             return y < r.X
         }
     }
-    panic(errorSetMemberType(r, x))
+    panic(makeErrorMemberType(r, x))
 }
 func (r IntBoundedStrictly) Has(x interface{}) bool {
     switch x.(type) {
@@ -253,7 +253,7 @@ func (r IntBoundedStrictly) Has(x interface{}) bool {
             return y < r.X
         }
     }
-    panic(errorSetMemberType(r, x))
+    panic(makeErrorMemberType(r, x))
 }
 func (r FloatBoundedStrictly) Has(x interface{}) bool {
     switch x.(type) {
@@ -266,7 +266,7 @@ func (r FloatBoundedStrictly) Has(x interface{}) bool {
             return y < r.X
         }
     }
-    panic(errorSetMemberType(r, x))
+    panic(makeErrorMemberType(r, x))
 }
 func (r StringBoundedStrictly) Has(x interface{}) bool {
     switch x.(type) {
@@ -279,5 +279,5 @@ func (r StringBoundedStrictly) Has(x interface{}) bool {
             return y < r.X
         }
     }
-    panic(errorSetMemberType(r, x))
+    panic(makeErrorMemberType(r, x))
 }

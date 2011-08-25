@@ -178,7 +178,7 @@ func (q *Question) typeCast(v interface{}) (val interface{}, err os.Error) {
         case string:
             val = v
         default:
-            err = q.typeError("", v)
+            err = q.makeTypeError("", v)
         }
     case Int:
         switch v.(type) {
@@ -193,7 +193,7 @@ func (q *Question) typeCast(v interface{}) (val interface{}, err os.Error) {
         case int64:
             val = int64(v.(int64))
         default:
-            err = q.typeError(int64(1), v)
+            err = q.makeTypeError(int64(1), v)
         }
     case Uint:
         switch v.(type) {
@@ -208,7 +208,7 @@ func (q *Question) typeCast(v interface{}) (val interface{}, err os.Error) {
         case uint64:
             val = v.(uint64)
         default:
-            err = q.typeError(uint64(1), v)
+            err = q.makeTypeError(uint64(1), v)
         }
     case Float:
         switch v.(type) {
@@ -217,7 +217,7 @@ func (q *Question) typeCast(v interface{}) (val interface{}, err os.Error) {
         case float64:
             val = v.(float64)
         default:
-            err = q.typeError(float64(1), v)
+            err = q.makeTypeError(float64(1), v)
         }
     case StringSlice:
         fallthrough
@@ -318,9 +318,9 @@ func (q *Question) parse(in string) os.Error {
         if useDefault {
             x = def.(int64)
         } else if noInput {
-            return ErrorEmptyInput(0)
+            return ErrorEmptyInput
         } else if x, err = strconv.Atoi64(in); err != nil {
-            return q.typeError(x,in)
+            return q.makeTypeError(x,in)
         }
         val = x
     case Uint:
@@ -328,9 +328,9 @@ func (q *Question) parse(in string) os.Error {
         if useDefault {
             x = def.(uint64)
         } else if noInput {
-            return ErrorEmptyInput(0)
+            return ErrorEmptyInput
         } else if x, err = strconv.Atoui64(in); err != nil {
-            return q.typeError(x,in)
+            return q.makeTypeError(x,in)
         }
         val = x
     case Float:
@@ -338,9 +338,9 @@ func (q *Question) parse(in string) os.Error {
         if useDefault {
             x = def.(float64)
         } else if noInput {
-            return ErrorEmptyInput(0)
+            return ErrorEmptyInput
         } else if x, err = strconv.Atof64(in); err != nil {
-            return q.typeError(x,in)
+            return q.makeTypeError(x,in)
         }
         val = x
     case StringSlice:

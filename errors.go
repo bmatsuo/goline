@@ -12,89 +12,91 @@ import (
     "fmt"
 )
 
+//  Some simple errors with no dynamic String() elements.
+var (
+    ErrorEmptyInput = NewErrorRecoverable("Can not use empty string as value")
+    ErrorNoChoices  = NewError("No Menu choices given")
+)
+
+//  An interface for errors which prompts can recover from.
 type RecoverableError interface {
     os.Error
     IsRecoverable() bool
 }
 
+func NewError(msg string) os.Error { return os.NewError(msg) }
+func NewErrorRecoverable(msg string) SimpleRecoverableError {
+    return SimpleRecoverableError(msg)
+}
+
+//  A simple wrapper turning strings into RecoverableErrors
+type SimpleRecoverableError string
+
+func (err SimpleRecoverableError) IsRecoverable() bool { return true }
+func (err SimpleRecoverableError) String() string      { return string(err) }
+
+//  Returns true if error e implements RecoverableError.
+func CanRecover(e os.Error) (ok bool) {
+    switch e.(type) {
+    case RecoverableError:
+        ok = e.(RecoverableError).IsRecoverable()
+    }
+    return
+}
+
+//  Raises a run-time panic if the error err is not a RecoverableError.
 func panicUnrecoverable(err os.Error) {
-    if err != nil {
-        switch err.(type) {
-        case RecoverableError:
-            break
-        default:
-            panic(err)
-        }
+    if err != nil && !CanRecover(err) {
+        panic(err)
     }
 }
 
-type ErrorPrecision struct {
-    Wide, Thin interface{}
-}
+//  Errors returned when the input is too large to fit in a standard data type.
+type ErrorPrecision struct{ Wide, Thin interface{} }
 
-func (e ErrorPrecision) String() string {
-    return fmt.Sprintf("Input out of destination range (%v -> %v)", e.Wide, e.Thin)
-}
+var errPrecisionMsg = "Input out of destination range (%v -> %v)"
+
+func (e ErrorPrecision) String() string      { return fmt.Sprintf(errPrecisionMsg, e.Wide, e.Thin) }
 func (e ErrorPrecision) IsRecoverable() bool { return true }
 
 
+//  Errors returned when the input provided was not in a Question's AnswerSet.
 type ErrorNotInSet struct{ os.Error }
-
-func (err ErrorNotInSet) IsRecoverable() bool { return true }
 
 func (a *Question) makeErrorNotInSet(val interface{}) ErrorNotInSet {
     return ErrorNotInSet{
         fmt.Errorf("%s %s (%#v)", a.Responses[NotInSet], a.set.String(), val)}
 }
+func (err ErrorNotInSet) IsRecoverable() bool { return true }
 
+//  Errors raised when the input (or default, or first-answer) are not of the
+//  prompting Question's type.
 type ErrorType struct {
-    msg string
-    exp interface{}
-    rec interface{}
+    msg      string
+    exp, rec reflect.Value
 }
 
-func (e ErrorType) String() string {
-    return fmt.Sprintf("%s (%s != %s)", e.msg,
-        reflect.ValueOf(e.rec).Kind().String(),
-        reflect.ValueOf(e.exp).Kind().String())
+func makeTypeError(msg string, exp, rec interface{}) os.Error {
+    return ErrorType{msg, reflect.ValueOf(exp), reflect.ValueOf(rec)}
 }
-
+func (a *Question) makeTypeError(expect, recv interface{}) os.Error {
+    return makeTypeError(a.Responses[InvalidType], expect, recv)
+}
 func (e ErrorType) IsRecoverable() bool { return true }
-
-func (a *Question) typeError(expect, recv interface{}) os.Error {
-    return ErrorType{a.Responses[InvalidType], expect, recv}
+func (e ErrorType) ExpKind() string     { return e.exp.Kind().String() }
+func (e ErrorType) RecKind() string     { return e.rec.Kind().String() }
+func (e ErrorType) String() string {
+    return fmt.Sprintf("%s (%s != %s)", e.msg, e.RecKind(), e.ExpKind())
 }
 
-/*
-type ErrorOutOfRange struct {
-    value, min, max interface{}
-    err             os.Error
+//  Errors raised when an AnswerSet of improper type was given to the Question.
+type ErrorMemberType struct{ Set, Member reflect.Type }
+
+func makeErrorMemberType(s AnswerSet, member interface{}) os.Error {
+    return ErrorMemberType{reflect.TypeOf(s), reflect.TypeOf(member)}
 }
-
-func (oor ErrorOutOfRange) String() string      { return oor.err.String() }
-func (oor ErrorOutOfRange) IsRecoverable() bool { return true }
-
-func errorOOR(val, min, max interface{}) ErrorOutOfRange {
-    return ErrorOutOfRange{min, max, val,
-        fmt.Errorf("Value %v out of range [%v, %v]", val, min, max),
-    }
+func (err ErrorMemberType) Type() string    { return err.Set.String() }
+func (err ErrorMemberType) MemberType() string { return err.Member.String() }
+func (err ErrorMemberType) String() string {
+    return fmt.Sprintf("%s can't contain %s", err.Type(), err.MemberType())
 }
-*/
-
-type ErrorEmptyInput uint
-
-func (oor ErrorEmptyInput) String() string      { return "Can not use empty value" }
-func (oor ErrorEmptyInput) IsRecoverable() bool { return true }
-
-
-func errorEmptyRange(min, max interface{}) os.Error {
-    return fmt.Errorf("Range max is less than min (%v < %v)", min, max)
-}
-
-func errorSetMemberType(set, member interface{}) os.Error {
-    return fmt.Errorf("Set type %v cannot contain type %v",
-        reflect.TypeOf(set).String(),
-        reflect.TypeOf(member).String())
-}
-
-var errorNoChoices = os.NewError("No Menu choices given")
