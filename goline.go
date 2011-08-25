@@ -130,6 +130,27 @@ func SayTrimmed(msg string) (int, os.Error) {
 //      Rows        n/a
 //      Inline      string  " or "      Join terminal element (e.g. "a, b, or c")
 //      Columns*    int     80          Maximum line width
+//  If the default option is desired, it should be passed as nil.
+//      goline.List([]string{"cat", "dog", "go fish"}, goline.ColumnsAcross, nil)
+//      /* Outputs:
+//       *  cat     dog     go fish
+//       */
+//      goline.List([]string{"cat", "dog", "go fish"}, goline.ColumnsDown, 15)
+//      /* Outputs:
+//       *  cat     go fish
+//       *  dog
+//       */
+//      goline.List([]string{"cat", "dog", "go fish"}, goline.Inline, " and ")
+//      /* Outputs:
+//       *  cat, dog, and go fish
+//       */
+//      goline.List([]string{"cat", "dog", "go fish"}, goline.Rows, nil)
+//      /* Outputs:
+//       *  cat
+//       *  dog
+//       *  go fish
+//       */
+//  See subdirectory examples/goline-lists.
 func List(items interface{}, mode ListMode, option interface{}) {
     ival := reflect.ValueOf(items)
     itype := ival.Type()
@@ -215,7 +236,7 @@ func List(items interface{}, mode ListMode, option interface{}) {
             SayTrimmed(strs[0])
             break
         }
-        join := " or "
+        join := "or "
         switch option.(type) {
         case nil:
         case string:
