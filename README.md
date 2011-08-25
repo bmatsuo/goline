@@ -14,17 +14,9 @@ Differences for HighLine users
 * To be more Go-ish, where HighLine uses the term "strip", GoLine uses "trim".
 
 * Instead of an Agree(question,...) function, GoLine provides a function
-`Confirm(question, yesorno) bool`. This is because the author things the term
+`Confirm(question, yesorno, ...) bool`. This is because the author things the term
 "agree" implies the desire of a positive response to the question ("yes").
-The idea is to set up Confirm with positive language and believed value of
-that statement.
-
-```go
-if shouldProcess := false; !Confirm("Process data? ", shouldProcess, nil) {
-    // Process data.
-    // ...
-}
-```
+See the godoc documentation for more information.
 
 Dependencies
 -------------
@@ -44,6 +36,10 @@ General Documentation
 Use godoc to vew the documentation for goline
 
     godoc github.com/bmatsuo/goline
+    godoc github.com/bmatsuo/goline Say
+    godoc github.com/bmatsuo/goline Ask
+    godoc github.com/bmatsuo/goline Confirm
+    godoc github.com/bmatsuo/goline Choose
 
 Or alternatively, use a godoc http server
 
