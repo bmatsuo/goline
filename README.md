@@ -27,6 +27,7 @@ Use godoc to vew the documentation for goline
 
     godoc github.com/bmatsuo/goline
     godoc github.com/bmatsuo/goline Say
+    godoc github.com/bmatsuo/goline List
     godoc github.com/bmatsuo/goline Ask
     godoc github.com/bmatsuo/goline Confirm
     godoc github.com/bmatsuo/goline Choose
