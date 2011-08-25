@@ -7,11 +7,10 @@ package goline
  *  Description: 
  */
 import (
-    "reflect"
     "strings"
     "unicode"
-    "bufio"
-    "utf8"
+    "strconv"
+    "regexp"
     "fmt"
     "os"
 )
@@ -111,7 +110,7 @@ var tstring = []string{
 func (t Type) String() string    { return tstring[t] }
 func (t Type) IsSliceType() bool { return t >= StringSlice }
 
-type Answer struct {
+type Question struct {
     // The "prompt" message for the user.
     Question string
     // Pre-processing options for whitespace. See WhitespaceOption.
@@ -134,28 +133,17 @@ type Answer struct {
     typ Type
     val interface{}
     def interface{}
-    /*
-       inRange bool
-       umin    uint64
-       umax    uint64
-       fmin    float64
-       fmax    float64
-       imin    int64
-       imax    int64
-       smin    string
-       smax    string
-    */
 }
 
-func newAnswer(t Type) *Answer {
-    a := new(Answer)
-    a.typ = t
-    a.Responses = makeResponses()
-    a.Default = nil
-    a.FirstAnswer = nil
-    switch a.typ {
+func newQuestion(t Type) *Question {
+    q := new(Question)
+    q.typ = t
+    q.Responses = makeResponses()
+    q.Default = nil
+    q.FirstAnswer = nil
+    switch q.typ {
     case String:
-        a.Whitespace = Trim
+        q.Whitespace = Trim
     case Int:
         fallthrough
     case Uint:
@@ -169,28 +157,28 @@ func newAnswer(t Type) *Answer {
     case UintSlice:
         fallthrough
     case FloatSlice:
-        a.Whitespace = Trim | Collapse
+        q.Whitespace = Trim | Collapse
     }
-    a.Sep = " "
-    a.set = nil
-    return a
+    q.Sep = " "
+    q.set = nil
+    return q
 }
 
-func (a *Answer) setHas(x interface{}) bool {
-    if a.set != nil {
-        return a.set.Has(x)
+func (q *Question) setHas(x interface{}) bool {
+    if q.set != nil {
+        return q.set.Has(x)
     }
     return true
 }
 
-func (a *Answer) typeCast(v interface{}) (val interface{}, err os.Error) {
-    switch a.typ {
+func (q *Question) typeCast(v interface{}) (val interface{}, err os.Error) {
+    switch q.typ {
     case String:
         switch v.(type) {
         case string:
             val = v
         default:
-            err = a.makeTypeError("", v)
+            err = q.typeError("", v)
         }
     case Int:
         switch v.(type) {
@@ -205,7 +193,7 @@ func (a *Answer) typeCast(v interface{}) (val interface{}, err os.Error) {
         case int64:
             val = int64(v.(int64))
         default:
-            err = a.makeTypeError(int64(1), v)
+            err = q.typeError(int64(1), v)
         }
     case Uint:
         switch v.(type) {
@@ -220,7 +208,7 @@ func (a *Answer) typeCast(v interface{}) (val interface{}, err os.Error) {
         case uint64:
             val = v.(uint64)
         default:
-            err = a.makeTypeError(uint64(1), v)
+            err = q.typeError(uint64(1), v)
         }
     case Float:
         switch v.(type) {
@@ -229,7 +217,7 @@ func (a *Answer) typeCast(v interface{}) (val interface{}, err os.Error) {
         case float64:
             val = v.(float64)
         default:
-            err = a.makeTypeError(float64(1), v)
+            err = q.typeError(float64(1), v)
         }
     case StringSlice:
         fallthrough
@@ -238,63 +226,63 @@ func (a *Answer) typeCast(v interface{}) (val interface{}, err os.Error) {
     case UintSlice:
         fallthrough
     case FloatSlice:
-        err = fmt.Errorf("%s unimplemented", a.typ.String())
+        err = fmt.Errorf("%s unimplemented", q.typ.String())
     }
     return
 }
 
-func (a *Answer) tryFirstAnswer() os.Error {
-    if a.FirstAnswer != nil {
-        if val, err := a.typeCast(a.FirstAnswer); err != nil {
+func (q *Question) tryFirstAnswer() os.Error {
+    if q.FirstAnswer != nil {
+        if val, err := q.typeCast(q.FirstAnswer); err != nil {
             return err
         } else {
-            a.val = val
+            q.val = val
         }
     }
     return nil
 }
 
-func (a *Answer) defaultString(suffix string) string {
-    if a.Default != nil {
-        return fmt.Sprintf("|%v|%s", a.Default, suffix)
+func (q *Question) defaultString(suffix string) string {
+    if q.Default != nil {
+        return fmt.Sprintf("|%v|%s", q.Default, suffix)
     }
     return ""
 }
-func (a *Answer) tryDefault() (val interface{}, err os.Error) {
+func (q *Question) tryDefault() (val interface{}, err os.Error) {
     val = nil
-    if a.Default != nil {
-        return a.typeCast(a.Default)
+    if q.Default != nil {
+        return q.typeCast(q.Default)
     }
     return
 }
 
 //  Specify a set of answers in which the response much be contained.
-func (a *Answer) In(s AnswerSet) { a.set = s }
+func (q *Question) In(s AnswerSet) { q.set = s }
 
 //  Returns the Type which is enforced by the Answer.
-func (a *Answer) Type() Type { return a.typ }
+func (q *Question) Type() Type { return q.typ }
 
 var spaceRE = regexp.MustCompile("[ \t]+")
 
-func (a *Answer) parse(in string) os.Error {
-    a.val = nil // Clear the parse value for good measure.
+func (q *Question) parse(in string) os.Error {
+    q.val = nil // Clear the parse value for good measure.
     // Perform all pre-processing on the input.
-    if a.Whitespace&Remove > 0 {
+    if q.Whitespace&Remove > 0 {
         in = strings.Join(strings.FieldsFunc(in, unicode.IsSpace), "")
     } else {
-        if a.Whitespace&Chomp > 0 {
+        if q.Whitespace&Chomp > 0 {
             if in[len(in)-1] == '\r' {
                 in = in[:len(in)]
             }
         }
-        if a.Whitespace&Trim > 0 {
+        if q.Whitespace&Trim > 0 {
             in = strings.TrimSpace(in)
         }
-        if a.Whitespace&Collapse > 0 {
+        if q.Whitespace&Collapse > 0 {
             in = spaceRE.ReplaceAllString(in, " ")
         }
     }
-    switch a.Case {
+    switch q.Case {
     case Upper:
         in = strings.ToUpper(in)
     case Lower:
@@ -309,16 +297,16 @@ func (a *Answer) parse(in string) os.Error {
         err os.Error
     )
     noInput := len(in) == 0
-    useDefault := noInput && a.Default != nil
+    useDefault := noInput && q.Default != nil
     if useDefault {
-        if def, err = a.tryDefault(); err != nil {
+        if def, err = q.tryDefault(); err != nil {
             return err
         }
     }
 
     // Parse the user's input.
     var val interface{}
-    switch a.typ {
+    switch q.typ {
     case String:
         if useDefault {
             val = def.(string)
@@ -332,7 +320,7 @@ func (a *Answer) parse(in string) os.Error {
         } else if noInput {
             return ErrorEmptyInput(0)
         } else if x, err = strconv.Atoi64(in); err != nil {
-            return a.makeTypeError(x,in)
+            return q.typeError(x,in)
         }
         val = x
     case Uint:
@@ -342,7 +330,7 @@ func (a *Answer) parse(in string) os.Error {
         } else if noInput {
             return ErrorEmptyInput(0)
         } else if x, err = strconv.Atoui64(in); err != nil {
-            return a.makeTypeError(x,in)
+            return q.typeError(x,in)
         }
         val = x
     case Float:
@@ -352,7 +340,7 @@ func (a *Answer) parse(in string) os.Error {
         } else if noInput {
             return ErrorEmptyInput(0)
         } else if x, err = strconv.Atof64(in); err != nil {
-            return a.makeTypeError(x,in)
+            return q.typeError(x,in)
         }
         val = x
     case StringSlice:
@@ -362,11 +350,11 @@ func (a *Answer) parse(in string) os.Error {
     case UintSlice:
         fallthrough
     case FloatSlice:
-        err = fmt.Errorf("%s unimplemented", a.typ.String())
+        err = fmt.Errorf("%s unimplemented", q.typ.String())
     }
 
     // Check set membership
-    switch a.typ {
+    switch q.typ {
     case String:
         fallthrough
     case Int:
@@ -374,8 +362,8 @@ func (a *Answer) parse(in string) os.Error {
     case Uint:
         fallthrough
     case Float:
-        if !a.setHas(val) {
-            return a.makeErrorNotInSet(val)
+        if !q.setHas(val) {
+            return q.makeErrorNotInSet(val)
         }
     case StringSlice:
         fallthrough
@@ -384,12 +372,12 @@ func (a *Answer) parse(in string) os.Error {
     case UintSlice:
         fallthrough
     case FloatSlice:
-        err = fmt.Errorf("%s unimplemented", a.typ.String())
+        err = fmt.Errorf("%s unimplemented", q.typ.String())
     }
 
     // Set the parsed value if there was no error.
     if err == nil {
-        a.val = val
+        q.val = val
     }
 
     return err
@@ -398,36 +386,36 @@ func (a *Answer) parse(in string) os.Error {
 // Cast a value result from a wide (e.g. 64bit) type to the desired type.
 // This should not fail under any normal circumstances, so failure
 // should break the loop.
-func (a *Answer) setDest(dest interface{}) os.Error {
-    switch a.Type() {
+func (q *Question) setDest(dest interface{}) os.Error {
+    switch q.Type() {
     case Uint:
         switch dest.(type) {
         case *uint:
             d := dest.(*uint)
-            *(d) = uint(a.val.(uint64))
-            if x := uint64(*(d)); x != a.val.(uint64) {
-                return ErrorPrecision{a.val.(uint64), x}
+            *(d) = uint(q.val.(uint64))
+            if x := uint64(*(d)); x != q.val.(uint64) {
+                return ErrorPrecision{q.val.(uint64), x}
             }
         case *uint8:
             d := dest.(*uint8)
-            *(d) = uint8(a.val.(uint64))
-            if x := uint64(*(d)); x != a.val.(uint64) {
-                return ErrorPrecision{a.val.(uint64), x}
+            *(d) = uint8(q.val.(uint64))
+            if x := uint64(*(d)); x != q.val.(uint64) {
+                return ErrorPrecision{q.val.(uint64), x}
             }
         case *uint16:
             d := dest.(*uint16)
-            *(d) = uint16(a.val.(uint64))
-            if x := uint64(*(d)); x != a.val.(uint64) {
-                return ErrorPrecision{a.val.(uint64), x}
+            *(d) = uint16(q.val.(uint64))
+            if x := uint64(*(d)); x != q.val.(uint64) {
+                return ErrorPrecision{q.val.(uint64), x}
             }
         case *uint32:
             d := dest.(*uint32)
-            *(d) = uint32(a.val.(uint64))
-            if x := uint64(*(d)); x != a.val.(uint64) {
-                return ErrorPrecision{a.val.(uint64), x}
+            *(d) = uint32(q.val.(uint64))
+            if x := uint64(*(d)); x != q.val.(uint64) {
+                return ErrorPrecision{q.val.(uint64), x}
             }
         case *uint64:
-            *(dest.(*uint64)) = a.val.(uint64)
+            *(dest.(*uint64)) = q.val.(uint64)
         default:
             return fmt.Errorf("Unexpected cast type")
         }
@@ -435,30 +423,30 @@ func (a *Answer) setDest(dest interface{}) os.Error {
         switch dest.(type) {
         case *int:
             d := dest.(*int)
-            *(d) = int(a.val.(int64))
-            if x := int64(*(d)); x != a.val.(int64) {
-                return ErrorPrecision{a.val.(int64), x}
+            *(d) = int(q.val.(int64))
+            if x := int64(*(d)); x != q.val.(int64) {
+                return ErrorPrecision{q.val.(int64), x}
             }
         case *int8:
             d := dest.(*int8)
-            *(d) = int8(a.val.(int64))
-            if x := int64(*(d)); x != a.val.(int64) {
-                return ErrorPrecision{a.val.(int64), x}
+            *(d) = int8(q.val.(int64))
+            if x := int64(*(d)); x != q.val.(int64) {
+                return ErrorPrecision{q.val.(int64), x}
             }
         case *int16:
             d := dest.(*int16)
-            *(d) = int16(a.val.(int64))
-            if x := int64(*(d)); x != a.val.(int64) {
-                return ErrorPrecision{a.val.(int64), x}
+            *(d) = int16(q.val.(int64))
+            if x := int64(*(d)); x != q.val.(int64) {
+                return ErrorPrecision{q.val.(int64), x}
             }
         case *int32:
             d := dest.(*int32)
-            *(d) = int32(a.val.(int64))
-            if x := int64(*(d)); x != a.val.(int64) {
-                return ErrorPrecision{a.val.(int64), x}
+            *(d) = int32(q.val.(int64))
+            if x := int64(*(d)); x != q.val.(int64) {
+                return ErrorPrecision{q.val.(int64), x}
             }
         case *int64:
-            *(dest.(*int64)) = a.val.(int64)
+            *(dest.(*int64)) = q.val.(int64)
         default:
             return fmt.Errorf("Unexpected cast type")
         }
@@ -466,19 +454,19 @@ func (a *Answer) setDest(dest interface{}) os.Error {
         switch dest.(type) {
         case *float32:
             d := dest.(*float32)
-            *(d) = float32(a.val.(float64))
-            if x := float64(*(d)); x != a.val.(float64) {
-                return ErrorPrecision{a.val.(float64), x}
+            *(d) = float32(q.val.(float64))
+            if x := float64(*(d)); x != q.val.(float64) {
+                return ErrorPrecision{q.val.(float64), x}
             }
         case *float64:
-            *(dest.(*float64)) = a.val.(float64)
+            *(dest.(*float64)) = q.val.(float64)
         default:
             return fmt.Errorf("Unexpected cast type")
         }
     case String:
         switch dest.(type) {
         case *string:
-            *(dest.(*string)) = a.val.(string)
+            *(dest.(*string)) = q.val.(string)
         default:
             return fmt.Errorf("Unexpected cast type")
         }

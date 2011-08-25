@@ -35,9 +35,9 @@ func Choose(config func(*Menu)) (i int, v interface{}) {
     List(raw, m.ListMode, nil)
     ok := true
     var resp string
-    Ask(&resp, m.Question, func(a *Answer) {
-        a.In(StringSet(selections))
-        a.Panic = func(err os.Error) {
+    Ask(&resp, m.Question, func(q *Question) {
+        q.In(StringSet(selections))
+        q.Panic = func(err os.Error) {
             ok = false
             m.Panic(err)
         }

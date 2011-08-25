@@ -225,15 +225,15 @@ func List(items interface{}, mode ListMode, option interface{}) {
 //  be a pointer to a native Go type (int, uint16, string, float32, ...).
 //  Slice types are not currently supported. List input must be done with a
 //  *string destination and post-processing.
-func Ask(dest interface{}, msg string, config func(*Answer)) (e os.Error) {
-    var a *Answer
+func Ask(dest interface{}, msg string, config func(*Question)) (e os.Error) {
+    var q *Question
     defer func() {
         if err := recover(); err != nil {
             switch err.(type) {
             case os.Error:
                 // Call a panic method...
-                if a.Panic != nil {
-                    a.Panic(err.(os.Error))
+                if q.Panic != nil {
+                    q.Panic(err.(os.Error))
                 }
             default:
                 panic(err)
@@ -279,16 +279,16 @@ func Ask(dest interface{}, msg string, config func(*Answer)) (e os.Error) {
     default:
         fmt.Errorf("Unusable destination")
     }
-    a = newAnswer(t)
-    a.Question = msg
+    q = newQuestion(t)
+    q.Question = msg
     if config != nil {
-        config(a)
+        config(q)
     }
 
-    if err := a.tryFirstAnswer(); err == nil && a.val != nil {
-        if err := a.setDest(dest); err != nil {
+    if err := q.tryFirstAnswer(); err == nil && q.val != nil {
+        if err := q.setDest(dest); err != nil {
             panicUnrecoverable(err)
-            a.val = nil
+            q.val = nil
         }
         return
     }
@@ -296,12 +296,12 @@ func Ask(dest interface{}, msg string, config func(*Answer)) (e os.Error) {
     prompt := msg
     contFunc := func(err os.Error) {
         Say(fmt.Sprintf("Error: %s\n", err.String()))
-        prompt = a.Responses[AskOnError]
+        prompt = q.Responses[AskOnError]
     }
     r := bufio.NewReader(os.Stdin)
     for {
         tail := stringSuffixFunc(prompt, unicode.IsSpace)
-        Say(prompt + a.defaultString(tail))
+        Say(prompt + q.defaultString(tail))
         var resp []byte
         for cont := true; cont; {
             s, isPrefix, err := r.ReadLine()
@@ -312,7 +312,7 @@ func Ask(dest interface{}, msg string, config func(*Answer)) (e os.Error) {
             resp = append(resp, s...)
             cont = isPrefix
         }
-        if err := a.parse(string(resp)); err != nil {
+        if err := q.parse(string(resp)); err != nil {
             panicUnrecoverable(err)
             contFunc(err)
             continue
@@ -321,7 +321,7 @@ func Ask(dest interface{}, msg string, config func(*Answer)) (e os.Error) {
         // Cast the result from a wide (e.g. 64bit) type to the desired type.
         // This should not fail under any normal circumstances, so failure
         // should break the loop.
-        if err := a.setDest(dest); err != nil {
+        if err := q.setDest(dest); err != nil {
             panicUnrecoverable(err)
             contFunc(err)
             continue
@@ -331,7 +331,7 @@ func Ask(dest interface{}, msg string, config func(*Answer)) (e os.Error) {
     return
 }
 
-func Confirm(question string, yes bool, config func(a *Answer)) bool {
+func Confirm(question string, yes bool, config func(*Question)) bool {
     def := "no"
     if yes {
         def = "yes"
@@ -339,15 +339,15 @@ func Confirm(question string, yes bool, config func(a *Answer)) bool {
 
     var okstr string
     var err os.Error
-    Ask(&okstr, question, func(a *Answer) {
-        a.Default = def
-        a.In(StringSet{"yes", "y", "no", "n"})
+    Ask(&okstr, question, func(q *Question) {
+        q.Default = def
+        q.In(StringSet{"yes", "y", "no", "n"})
         if config != nil {
-            config(a)
+            config(q)
         }
-        if a.Panic != nil {
-            f := a.Panic
-            a.Panic = func(e os.Error) {
+        if q.Panic != nil {
+            f := q.Panic
+            q.Panic = func(e os.Error) {
                 err = e
                 f(e)
             }

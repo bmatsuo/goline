@@ -42,16 +42,27 @@ type ErrorNotInSet struct{ os.Error }
 
 func (err ErrorNotInSet) IsRecoverable() bool { return true }
 
-func (a *Answer) makeErrorNotInSet(val interface{}) ErrorNotInSet {
+func (a *Question) makeErrorNotInSet(val interface{}) ErrorNotInSet {
     return ErrorNotInSet{
         fmt.Errorf("%s %s (%#v)", a.Responses[NotInSet], a.set.String(), val)}
 }
 
-func (a *Answer) makeTypeError(expect, recv interface{}) os.Error {
-    return fmt.Errorf("%s (%s != %s)",
-        a.Responses[InvalidType],
-        reflect.ValueOf(recv).Kind().String(),
-        reflect.ValueOf(expect).Kind().String())
+type ErrorType struct {
+    msg string
+    exp interface{}
+    rec interface{}
+}
+
+func (e ErrorType) String() string {
+    return fmt.Sprintf("%s (%s != %s)", e.msg,
+        reflect.ValueOf(e.rec).Kind().String(),
+        reflect.ValueOf(e.exp).Kind().String())
+}
+
+func (e ErrorType) IsRecoverable() bool { return true }
+
+func (a *Question) typeError(expect, recv interface{}) os.Error {
+    return ErrorType{a.Responses[InvalidType], expect, recv}
 }
 
 /*

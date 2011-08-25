@@ -11,7 +11,6 @@ TARG=goline
 GOFILES=\
 		errors.go\
 		set.go\
-		answer.go\
 		question.go\
 		menu.go\
         goline.go\
