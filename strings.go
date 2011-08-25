@@ -54,7 +54,7 @@ var (
     //  The zero Stringer value.
     zeroStringer Stringer
     //  The Stringer reflect type.
-    typeStringer = reflect.TypeOf(zeroStringer)
+    typeStringer = reflect.TypeOf(Stringer(zeroSimpleString))
 )
 
 //  Return a Stringer object given either a string or an object that implements

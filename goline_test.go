@@ -14,5 +14,17 @@ import (
     "testing"
 )
 
+//  Returns true if f raises a runtime panic, false otherwise.
+func CausesPanic(f func()) (paniced bool) {
+    defer func() {
+        if e := recover(); e != nil {
+            paniced = true
+        }
+    }()
+    f()
+    return
+}
+
+
 func TestGoline(T *testing.T) {
 }
