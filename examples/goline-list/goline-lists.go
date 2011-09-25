@@ -43,13 +43,6 @@ func main() {
     goline.List(items, goline.Rows, nil)
     fmt.Println()
 
-    i, _ := goline.Choose(func(m *goline.Menu) {
-        m.Header = "Choose an item"
-        m.Question = "Which item do you want?"
-        m.SetChoices(items)
-    })
-    fmt.Println("Selected", i)
-
     goline.List([]string{"cat", "dog", "go fish"}, goline.ColumnsAcross, nil)
     /* Outputs:
      *  cat     dog     go fish
