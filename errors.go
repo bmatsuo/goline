@@ -24,6 +24,11 @@ type RecoverableError interface {
     IsRecoverable() bool
 }
 
+type RespondableError interface {
+    RecoverableError
+    Response() Response
+}
+
 func NewError(msg string) os.Error { return os.NewError(msg) }
 func NewErrorRecoverable(msg string) SimpleRecoverableError {
     return SimpleRecoverableError(msg)
@@ -36,7 +41,7 @@ func (err SimpleRecoverableError) IsRecoverable() bool { return true }
 func (err SimpleRecoverableError) String() string      { return string(err) }
 
 //  Returns true if error e implements RecoverableError.
-func CanRecover(e os.Error) (ok bool) {
+func ErrorIsRecoverable(e os.Error) (ok bool) {
     switch e.(type) {
     case RecoverableError:
         ok = e.(RecoverableError).IsRecoverable()
@@ -44,9 +49,18 @@ func CanRecover(e os.Error) (ok bool) {
     return
 }
 
+//  Returns true if error e implements RespondableError.
+func ErrorHasResponse(e os.Error) (ok bool) {
+    switch e.(type) {
+    case RespondableError:
+        ok = true
+    }
+    return
+}
+
 //  Raises a run-time panic if the error err is not a RecoverableError.
 func panicUnrecoverable(err os.Error) {
-    if err != nil && !CanRecover(err) {
+    if err != nil && !ErrorIsRecoverable(err) {
         panic(err)
     }
 }
@@ -58,6 +72,7 @@ var errPrecisionMsg = "Input out of destination range (%v -> %v)"
 
 func (e ErrorPrecision) String() string      { return fmt.Sprintf(errPrecisionMsg, e.Wide, e.Thin) }
 func (e ErrorPrecision) IsRecoverable() bool { return true }
+func (e ErrorPrecision) Response() Response { return Precision }
 
 
 //  Errors returned when the input provided was not in a Question's AnswerSet.
@@ -68,6 +83,7 @@ func (a *Question) makeErrorNotInSet(val interface{}) ErrorNotInSet {
         fmt.Errorf("%s %s (%#v)", a.Responses[NotInSet], a.set.String(), val)}
 }
 func (err ErrorNotInSet) IsRecoverable() bool { return true }
+func (err ErrorNotInSet) Response() Response { return NotInSet }
 
 //  Errors raised when the input (or default, or first-answer) are not of the
 //  prompting Question's type.
@@ -88,6 +104,7 @@ func (e ErrorType) RecKind() string     { return e.rec.Kind().String() }
 func (e ErrorType) String() string {
     return fmt.Sprintf("%s (%s != %s)", e.msg, e.RecKind(), e.ExpKind())
 }
+func (e ErrorType) Response() Response { return InvalidType }
 
 //  Errors raised when an AnswerSet of improper type was given to the Question.
 type ErrorMemberType struct{ Set, Member reflect.Type }

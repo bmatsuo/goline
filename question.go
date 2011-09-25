@@ -49,9 +49,12 @@ type Response uint
 const (
     // A question that prompts the user when an error was encountered.
     AskOnError Response = iota
-    // The error message printed when an Answer's FirstAnswer or Default has
-    // a type incompatible with its Type.
+    // The error message printed when a Question's response has a type
+    // incompatible with its Type.
     InvalidType
+    // The error message printed when a response has requires too great of
+    // precision to store.
+    Precision
     // The error message printed when the parsed input was not in the Answer's
     // AnswerSet.
     NotInSet
@@ -64,11 +67,12 @@ const (
     //AmbiguousCompletion
 )
 
-type Responses [3]string
+type Responses [4]string
 
 var defaultResponses = Responses{
     AskOnError:  "Please retry:  ",
     InvalidType: "Type mismatch",
+    Precision:   "The response has too high precision",
     NotInSet:    "Answer not contained in",
     //NotValid: "Answer did not pass validity test.",
     //NoCompletion: "No auto-completion",
