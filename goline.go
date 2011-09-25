@@ -222,6 +222,7 @@ func List(items interface{}, mode ListMode, option interface{}) {
 func Ask(dest interface{}, msg string, config func(*Question)) (e os.Error) {
     var q *Question
     defer func() {
+        // Recover from thrown errors and use the question's Panic method instead.
         if err := recover(); err != nil {
             switch err.(type) {
             case os.Error:
@@ -234,6 +235,8 @@ func Ask(dest interface{}, msg string, config func(*Question)) (e os.Error) {
             }
         }
     }()
+
+    // Check the type of the dest variable.
     if k := reflect.TypeOf(dest).Kind(); k != reflect.Ptr && k != reflect.Slice {
         panicUnrecoverable(fmt.Errorf("Ask(...) requires a Ptr type, not %s", k.String()))
         return
@@ -242,6 +245,7 @@ func Ask(dest interface{}, msg string, config func(*Question)) (e os.Error) {
         return
     }
 
+    // Determine the question type from the destination.
     var t Type
     switch dest.(type) {
     case *uint:
@@ -273,12 +277,15 @@ func Ask(dest interface{}, msg string, config func(*Question)) (e os.Error) {
     default:
         fmt.Errorf("Unusable destination")
     }
+
+    // Create a new Question and configure it.
     q = newQuestion(t)
     q.Question = msg
     if config != nil {
         config(q)
     }
 
+    // Attempt to short circuit if a first-answer was configured.
     if err := q.tryFirstAnswer(); err == nil && q.val != nil {
         if err := q.setDest(dest); err != nil {
             panicUnrecoverable(err)
@@ -287,15 +294,21 @@ func Ask(dest interface{}, msg string, config func(*Question)) (e os.Error) {
         return
     }
 
+    // Prepare the prompt and an error function to reset it.
     prompt := msg
     contFunc := func(err os.Error) {
         Say(fmt.Sprintf("Error: %s\n", err.String()))
         prompt = q.Responses[AskOnError]
     }
+
+    // Prompt the user and interpret the next line of input.
     r := bufio.NewReader(os.Stdin)
     for {
+        // Say the prompt, preserving the trailing space.
         tail := stringSuffixFunc(prompt, unicode.IsSpace)
         Say(prompt + q.defaultString(tail))
+
+        // Read a line of input.
         var resp []byte
         for cont := true; cont; {
             s, isPrefix, err := r.ReadLine()
@@ -306,6 +319,8 @@ func Ask(dest interface{}, msg string, config func(*Question)) (e os.Error) {
             resp = append(resp, s...)
             cont = isPrefix
         }
+
+        // Parse the input and check for errors.
         if err := q.parse(string(resp)); err != nil {
             panicUnrecoverable(err)
             contFunc(err)
