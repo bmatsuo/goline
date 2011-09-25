@@ -24,6 +24,8 @@ type RecoverableError interface {
     IsRecoverable() bool
 }
 
+//  An interface for RecoverableErrors which have predetermined, simple
+//  responses.
 type RespondableError interface {
     RecoverableError
     Response() Response
