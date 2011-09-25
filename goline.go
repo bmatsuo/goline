@@ -299,7 +299,12 @@ func Ask(dest interface{}, msg string, config func(*Question)) (e os.Error) {
     // Prepare the prompt and an error function to reset it.
     prompt := msg
     contFunc := func(err os.Error) {
-        Say(fmt.Sprintf("Error: %s\n", err.String()))
+        switch err.(type) {
+        case RespondableError:
+            Say(q.Responses[err.(RespondableError).Response()])
+        default:
+            Say(fmt.Sprintf("Error: %s\n", err.String()))
+        }
         prompt = q.Responses[AskOnError]
     }
 

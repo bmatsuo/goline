@@ -70,10 +70,10 @@ const (
 type Responses [4]string
 
 var defaultResponses = Responses{
-    AskOnError:  "Please retry:  ",
+    AskOnError:  "? ",
     InvalidType: "Type mismatch",
     Precision:   "The response has too high precision",
-    NotInSet:    "Answer not contained in",
+    NotInSet:    "Answer not contained in the answer set",
     //NotValid: "Answer did not pass validity test.",
     //NoCompletion: "No auto-completion",
     //AmbiguousCompletion: "Ambiguous auto-completion",
@@ -181,6 +181,7 @@ func newQuestion(t Type) *Question {
     q := new(Question)
     q.typ = t
     q.Responses = makeResponses()
+    q.Responses[InvalidType] = fmt.Sprintf("Response is not %s", t.String())
     q.Default = nil
     q.FirstAnswer = nil
     q.Sep = " "
@@ -306,7 +307,10 @@ func (q *Question) tryDefault() (val interface{}, err os.Error) {
 }
 
 //  Specify a set of answers in which the response much be contained.
-func (q *Question) In(s AnswerSet) { q.set = s }
+func (q *Question) In(s AnswerSet) {
+    q.Responses[NotInSet] = fmt.Sprintf("Response is not in %s", s.String())
+    q.set = s
+}
 
 //  Returns the Type which is enforced by the Answer.
 func (q *Question) Type() Type { return q.typ }

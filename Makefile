@@ -21,7 +21,7 @@ include $(GOROOT)/src/Make.pkg
 ex: install force
 	bash -c 'for d in examples/*; do cd $$d && gomake && cd -; done'
 
-exinstall: force
+exinstall: install force
 	bash -c 'for d in examples/*; do cd $$d && gomake install && cd -; done'
 
 exclean: force
@@ -29,5 +29,9 @@ exclean: force
 
 exnuke: force
 	bash -c 'for d in examples/*; do cd $$d && gomake nuke && cd -; done'
+
+allclean: exclean clean
+
+allnuke: exnuke nuke
 
 force:
