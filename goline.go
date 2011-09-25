@@ -103,7 +103,7 @@ func List(items interface{}, mode ListMode, option interface{}) {
     }
 
     // Stringify each entry in items.
-    n := len(ival.Len())
+    n := ival.Len()
     strs := make([]string, n)
     for i := range strs {
         v := ival.Index(i).Interface()
@@ -377,7 +377,7 @@ func Confirm(question string, yes bool, config func(*Question)) bool {
 
     // Interpret the result.
     if err != nil {
-        return panic(err)
+        panic(err)
     }
     if okstr[0] == 'y' {
         return true
