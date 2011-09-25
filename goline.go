@@ -246,36 +246,9 @@ func Ask(dest interface{}, msg string, config func(*Question)) (e os.Error) {
     }
 
     // Determine the question type from the destination.
-    var t Type
-    switch dest.(type) {
-    case *uint:
-        t = Uint
-    case *uint8:
-        t = Uint
-    case *uint16:
-        t = Uint
-    case *uint32:
-        t = Uint
-    case *uint64:
-        t = Uint
-    case *int:
-        t = Int
-    case *int8:
-        t = Int
-    case *int16:
-        t = Int
-    case *int32:
-        t = Int
-    case *int64:
-        t = Int
-    case *float32:
-        t = Float
-    case *float64:
-        t = Float
-    case *string:
-        t = String
-    default:
-        fmt.Errorf("Unusable destination")
+    t, err := TypeOf(reflect.Indirect(reflect.ValueOf(dest)).Interface())
+    if err != nil {
+        panic(err)
     }
 
     // Create a new Question and configure it.

@@ -7,6 +7,7 @@ package goline
  *  Description: 
  */
 import (
+    "reflect"
     "strings"
     "unicode"
     "strconv"
@@ -68,7 +69,7 @@ type Responses [3]string
 var defaultResponses = Responses{
     AskOnError:  "Please retry:  ",
     InvalidType: "Type mismatch",
-    NotInSet: "Answer not contained in",
+    NotInSet:    "Answer not contained in",
     //NotValid: "Answer did not pass validity test.",
     //NoCompletion: "No auto-completion",
     //AmbiguousCompletion: "Ambiguous auto-completion",
@@ -110,6 +111,40 @@ var tstring = []string{
 func (t Type) String() string    { return tstring[t] }
 func (t Type) IsSliceType() bool { return t >= StringSlice }
 
+func TypeOf(v interface{}) (typ Type, err os.Error) {
+    switch v.(type) {
+    case uint:
+        typ = Uint
+    case uint8:
+        typ = Uint
+    case uint16:
+        typ = Uint
+    case uint32:
+        typ = Uint
+    case uint64:
+        typ = Uint
+    case int:
+        typ = Int
+    case int8:
+        typ = Int
+    case int16:
+        typ = Int
+    case int32:
+        typ = Int
+    case int64:
+        typ = Int
+    case float32:
+        typ = Float
+    case float64:
+        typ = Float
+    case string:
+        typ = String
+    default:
+        err = fmt.Errorf("Unrecognizable type %s", reflect.TypeOf(v).Name())
+    }
+    return
+}
+
 type Question struct {
     // The "prompt" message for the user.
     Question string
@@ -129,10 +164,10 @@ type Question struct {
     Sep string
     // Called when an error forces the prompt to halt without a value.
     Panic func(os.Error)
-    set AnswerSet
-    typ Type
-    val interface{}
-    def interface{}
+    set   AnswerSet
+    typ   Type
+    val   interface{}
+    def   interface{}
 }
 
 func newQuestion(t Type) *Question {
@@ -320,7 +355,7 @@ func (q *Question) parse(in string) os.Error {
         } else if noInput {
             return ErrorEmptyInput
         } else if x, err = strconv.Atoi64(in); err != nil {
-            return q.makeTypeError(x,in)
+            return q.makeTypeError(x, in)
         }
         val = x
     case Uint:
@@ -330,7 +365,7 @@ func (q *Question) parse(in string) os.Error {
         } else if noInput {
             return ErrorEmptyInput
         } else if x, err = strconv.Atoui64(in); err != nil {
-            return q.makeTypeError(x,in)
+            return q.makeTypeError(x, in)
         }
         val = x
     case Float:
@@ -340,7 +375,7 @@ func (q *Question) parse(in string) os.Error {
         } else if noInput {
             return ErrorEmptyInput
         } else if x, err = strconv.Atof64(in); err != nil {
-            return q.makeTypeError(x,in)
+            return q.makeTypeError(x, in)
         }
         val = x
     case StringSlice:
