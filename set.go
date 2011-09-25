@@ -277,13 +277,13 @@ func (r StringBounded) Has(x interface{}) bool {
     panic(makeErrorMemberType(r, x))
 }
 
-//  In interval strictly bounded by a single number.
+//  An interval strictly bounded by a single number.
 type UintBoundedStrictly UintBounded
-//  In interval strictly bounded by a single number.
+//  An interval strictly bounded by a single number.
 type IntBoundedStrictly IntBounded
-//  In interval strictly bounded by a single number.
+//  An interval strictly bounded by a single number.
 type FloatBoundedStrictly FloatBounded
-//  In interval strictly bounded by a single number.
+//  An interval strictly bounded by a single number.
 type StringBoundedStrictly StringBounded
 
 // TODO: Fix the String method so that it returns open intervals

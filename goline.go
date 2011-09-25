@@ -96,11 +96,15 @@ const (
 //  See subdirectory examples/goline-lists.
 func List(items interface{}, mode ListMode, option interface{}) {
     ival := reflect.ValueOf(items)
-    itype := ival.Type()
-    if k := itype.Kind(); k != reflect.Slice {
+
+    // Ensure that items is a slice type.
+    if k := ival.Type().Kind(); k != reflect.Slice {
         panic(os.NewError("List given non-Slice types."))
     }
-    strs := make([]string, ival.Len())
+
+    // Stringify each entry in items.
+    n := len(ival.Len())
+    strs := make([]string, n)
     for i := range strs {
         v := ival.Index(i).Interface()
         switch v.(type) {
@@ -112,11 +116,16 @@ func List(items interface{}, mode ListMode, option interface{}) {
             panic(os.NewError("List items contain non-string, non-Stringer item"))
         }
     }
+
+    // Print the list.
     switch mode {
     case ColumnsAcross:
+        // There is another switch statement in the ColumnsDown action.
         fallthrough
     case ColumnsDown:
         wrap := 80
+
+        // Try to interpret the option variable as a wrap width.
         switch option.(type) {
         case nil:
         case int:
@@ -125,16 +134,16 @@ func List(items interface{}, mode ListMode, option interface{}) {
             panic(os.NewError("List option of unacceptable type"))
         }
 
+        // Determine the width of each column, and number of columns to print.
         var width int
         for i := range strs {
-            if n := len(strs[i]); n > width {
-                width = n
+            if m := len(strs[i]); m > width {
+                width = m
             }
         }
-
-        n := len(strs)
         ncols := (wrap + 1) / (width + 1)
 
+        // Treat the special case of 1 column.
         if ncols <= 1 {
             // Just print rows if no more than 1 column fits.
             for i := range strs {
@@ -145,23 +154,29 @@ func List(items interface{}, mode ListMode, option interface{}) {
 
         nrows := (n + ncols - 1) / ncols
 
-        sfmt := fmt.Sprintf("%%-%ds", width)
+        // Pad each string so that it is one column wide.
+        sfmt := fmt.Sprintf("%%-%ds", width) // e.g. "%20"
         for i := range strs {
             strs[i] = fmt.Sprintf(sfmt, strs[i])
         }
 
+        // Print the list according to the mode.
         switch mode {
         case ColumnsAcross:
             for i := 0; i < n; i += ncols {
+                // Determine the number of elements in the row.
                 end := i + ncols
                 if end > n {
                     end = n
                 }
+
+                // Print the row (trimming excess padding).
                 row := strs[i:end]
                 SayTrimmed(strings.Join(row, " "))
             }
         case ColumnsDown:
             for i := 0; i < nrows; i++ {
+                // Select the items in the row using column-major order.
                 var row []string
                 for j := 0; j < ncols; j++ {
                     index := j*nrows + i
@@ -170,15 +185,24 @@ func List(items interface{}, mode ListMode, option interface{}) {
                     }
                     row = append(row, strs[index])
                 }
+
+                // Print the row with no excess padding.
                 SayTrimmed(strings.Join(row, " "))
             }
         }
     case Inline:
         n := len(strs)
-        if n == 1 {
+
+        // Handle the special zero-/single-element case.
+        if n == 0 {
+            Say("")
+            break
+        } else if n == 1 {
             SayTrimmed(strs[0])
             break
         }
+
+        // Try to interpret the option argument as a joining string.
         join := "or "
         switch option.(type) {
         case nil:
@@ -187,13 +211,18 @@ func List(items interface{}, mode ListMode, option interface{}) {
         default:
             panic(os.NewError("List option of unacceptable type"))
         }
+
+        // Handle the special two-element case.
         if n == 2 {
-            Say(strings.Join([]string{strs[n-2], join, strs[n-2], "\n"}, ""))
+            SayTrimmed(strings.Join([]string{strs[0], " ", join, strs[1], "\n"}, ""))
             break
         }
+
+        // Create and print the inline list.
         strs[n-1] = join + strs[n-1]
         SayTrimmed(strings.Join(strs, ", "))
     case Rows:
+        // Print each item on its own row.
         for i := range strs {
             SayTrimmed(strs[i])
         }
@@ -328,6 +357,7 @@ func Confirm(question string, yes bool, config func(*Question)) bool {
         def = "yes"
     }
 
+    // Ask a yes/no question.
     var okstr string
     var err os.Error
     Ask(&okstr, question, func(q *Question) {
@@ -344,8 +374,10 @@ func Confirm(question string, yes bool, config func(*Question)) bool {
             }
         }
     })
+
+    // Interpret the result.
     if err != nil {
-        return false
+        return panic(err)
     }
     if okstr[0] == 'y' {
         return true
@@ -357,7 +389,9 @@ func Confirm(question string, yes bool, config func(*Question)) bool {
 //  of the chosen item, and the item itself in an empty interface. See
 //  Menu for more information about configuring the prompt.
 func Choose(config func(*Menu)) (i int, v interface{}) {
-    i = -1
+    i = -1 // The chosen index.
+
+    // Create a Menu and run the config function.
     m := newMenu()
     config(m)
     if m.Len() == 0 {
@@ -367,13 +401,17 @@ func Choose(config func(*Menu)) (i int, v interface{}) {
         }
     }
 
+    // Print the menu header if there is one.
     if len(m.Header) > 0 {
         Say(m.Header)
     }
 
+    // Display the list.
     raw, selections, tr := m.Selections()
     List(raw, m.ListMode, nil)
     ok := true
+
+    // Ask for a selection.
     var resp string
     Ask(&resp, m.Question, func(q *Question) {
         q.In(StringSet(selections))
@@ -386,8 +424,10 @@ func Choose(config func(*Menu)) (i int, v interface{}) {
         return
     }
 
+    // Translate the response into an index and choice.
     i = tr[resp]
     v = m.Choices[i]
 
+    // Return the index and choice selected.
     return
 }

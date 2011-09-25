@@ -81,6 +81,8 @@ func makeResponses() Responses {
     return r
 }
 
+func (rs Responses) Set(resp Response, msg string) { rs[resp] = msg }
+
 //  64-bit types are always used to read data. It is then cast to a thinner
 //  type dynamically with the "reflect" package.
 type Type uint
@@ -170,12 +172,16 @@ type Question struct {
     def   interface{}
 }
 
+//  Allocate a new Question of a specified type.
 func newQuestion(t Type) *Question {
     q := new(Question)
     q.typ = t
     q.Responses = makeResponses()
     q.Default = nil
     q.FirstAnswer = nil
+    q.Sep = " "
+    q.set = nil
+    // Set the whitespace options based on the type.
     switch q.typ {
     case String:
         q.Whitespace = Trim
@@ -194,11 +200,10 @@ func newQuestion(t Type) *Question {
     case FloatSlice:
         q.Whitespace = Trim | Collapse
     }
-    q.Sep = " "
-    q.set = nil
     return q
 }
 
+//  Returns true if the q.set contains x.
 func (q *Question) setHas(x interface{}) bool {
     if q.set != nil {
         return q.set.Has(x)
@@ -206,6 +211,7 @@ func (q *Question) setHas(x interface{}) bool {
     return true
 }
 
+//  Cast v as a variable of the questions type.
 func (q *Question) typeCast(v interface{}) (val interface{}, err os.Error) {
     switch q.typ {
     case String:
@@ -266,6 +272,7 @@ func (q *Question) typeCast(v interface{}) (val interface{}, err os.Error) {
     return
 }
 
+//  Attempt to set the input value to q.FirstAnswer.
 func (q *Question) tryFirstAnswer() os.Error {
     if q.FirstAnswer != nil {
         if val, err := q.typeCast(q.FirstAnswer); err != nil {
@@ -277,12 +284,15 @@ func (q *Question) tryFirstAnswer() os.Error {
     return nil
 }
 
+//  Return the a string representation of q.Default for the prompt.
 func (q *Question) defaultString(suffix string) string {
     if q.Default != nil {
         return fmt.Sprintf("|%v|%s", q.Default, suffix)
     }
     return ""
 }
+
+//  Attempt to set the input value to q.Default.
 func (q *Question) tryDefault() (val interface{}, err os.Error) {
     val = nil
     if q.Default != nil {
