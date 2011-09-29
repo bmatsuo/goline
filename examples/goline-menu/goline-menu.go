@@ -39,4 +39,19 @@ func main() {
         m.Choice("Do nothing.", nil)
     })
     fmt.Println("Selected", i)
+    fmt.Println()
+    for cont := true; cont; {
+        goline.Choose(func(m *goline.Menu) {
+            m.Header = "Enter a command: "
+            m.Question = "?> "
+            m.Shell = true
+            m.ListMode = goline.Inline
+            m.IndexMode = goline.NoIndex
+            m.Choice("echo", func(s goline.Stringer, args string) {
+                fmt.Println(args)
+            })
+            m.Choice("quit", func(s goline.Stringer, args string) { cont = false })
+            m.Choice("exit", func(s goline.Stringer, args string) { cont = false })
+        })
+    }
 }

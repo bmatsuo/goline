@@ -22,7 +22,8 @@ import (
 type IndexMode uint
 
 const (
-    Literal IndexMode = iota
+    NoIndex IndexMode = iota
+    Literal
     Number
     Letter
 )
@@ -32,6 +33,7 @@ const (
     LiteralSuffix
 )
 
+func (imode IndexMode) UseIndex() bool       { return imode&0xFF != NoIndex }
 func (imode IndexMode) UseLiteral() bool       { return imode&0xFF == Literal }
 func (imode IndexMode) UseNumber() bool        { return imode&0xFF == Number }
 func (imode IndexMode) UseLetter() bool        { return imode&0xFF == Letter }
@@ -56,6 +58,8 @@ func getLetterIndex(i int) string {
 
 func (m *Menu) getIndexNoSuffix(i int) string {
     switch {
+    case !m.UseIndex():
+        return ""
     case m.UseLiteral():
         return m.Index
     case m.UseNumber():
@@ -75,6 +79,8 @@ func (m *Menu) getIndex(i int) string {
         s = m.IndexSuffix
     case m.UseDefaultSuffix():
         switch {
+        case !m.UseIndex():
+            s = ""
         case m.UseLiteral():
             // This case might produce a warning...
             s = " "
@@ -141,9 +147,15 @@ func (m *Menu) Len() int { return len(m.Choices) }
 //  m.Choices.
 func (m *Menu) Selections() (choices []string, selections []string, tr map[string]int) {
     selectIndices, selectNames := m.SelectIndices(), m.SelectNames()
+    if m.Shell {
+        // Can't select indices in shell commands.
+        selectIndices = false
+        selectNames = true
+    }
     if m.UseLiteral() {
         // Can't select indices if all choices have the same index.
         selectIndices = false
+        selectNames = true // Run into a problem when multiple choices have the same name.
     }
     // Compute the necessary size of the structures and allocate them.
     n := m.Len()

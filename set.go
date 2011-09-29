@@ -178,6 +178,25 @@ func (set StringSet) String() string {
     return string(p)
 }
 
+type shellCommandSet StringSet
+
+func (set shellCommandSet) Has(x interface{}) bool {
+    switch x.(type) {
+    case string:
+        y := x.(string)
+        name, _ := splitShellCmd(y)
+        for i := range set {
+            if set[i] == name {
+                return true
+            }
+        }
+        return false
+    }
+    panic(makeErrorMemberType(set, x))
+}
+
+func (set shellCommandSet) String() string { return StringSet(set).String() }
+
 //  An interval with only one bound, X.
 type UintBounded struct {
     Direction

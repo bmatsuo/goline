@@ -390,6 +390,22 @@ func Confirm(question string, yes bool, config func(*Question)) bool {
     return false
 }
 
+func splitShellCmd(cmd string) (name, args string) {
+    cmd = strings.TrimLeftFunc(cmd, unicode.IsSpace)
+    pre := strings.IndexFunc(cmd, unicode.IsSpace)
+    if pre > 0 {
+        name = cmd[0:pre]
+        args = strings.TrimLeftFunc(cmd[pre:], unicode.IsSpace)
+    } else if pre == -1 {
+        name = cmd
+        args = ""
+    } else {
+        panic("unexpected case (untrimmed)")
+    }
+    return
+}
+
+
 //  Prompt the user to choose from a list of choices. Return the index
 //  of the chosen item, and the item itself in an empty interface. See
 //  Menu for more information about configuring the prompt.
@@ -416,25 +432,14 @@ func Choose(config func(*Menu)) (i int, v interface{}) {
     List(raw, m.ListMode, nil)
     ok := true
 
-    splitShellCmd := func(cmd string) (name, args string) {
-        cmd = strings.TrimLeftFunc(cmd, unicode.IsSpace)
-        pre := strings.IndexFunc(cmd, unicode.IsSpace)
-        if pre > 0 {
-            name = cmd[0:pre]
-            args = strings.TrimLeftFunc(cmd[pre:], unicode.IsSpace)
-        } else if pre == -1 {
-            name = cmd
-            args = ""
-        } else {
-            panic("unexpected case (untrimmed)")
-        }
-        return
-    }
-
     // Ask for a selection.
     var resp string
     Ask(&resp, m.Question, func(q *Question) {
-        q.In(StringSet(selections))
+        if m.Shell {
+            q.In(shellCommandSet(selections))
+        } else {
+            q.In(StringSet(selections))
+        }
         q.Panic = func(err os.Error) {
             ok = false
             m.Panic(err)
