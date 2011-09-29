@@ -416,6 +416,21 @@ func Choose(config func(*Menu)) (i int, v interface{}) {
     List(raw, m.ListMode, nil)
     ok := true
 
+    splitShellCmd := func(cmd string) (name, args string) {
+        cmd = strings.TrimLeftFunc(cmd, unicode.IsSpace)
+        pre := strings.IndexFunc(cmd, unicode.IsSpace)
+        if pre > 0 {
+            name = cmd[0:pre]
+            args = strings.TrimLeftFunc(cmd[pre:], unicode.IsSpace)
+        } else if pre == -1 {
+            name = cmd
+            args = ""
+        } else {
+            panic("unexpected case (untrimmed)")
+        }
+        return
+    }
+
     // Ask for a selection.
     var resp string
     Ask(&resp, m.Question, func(q *Question) {
@@ -430,8 +445,16 @@ func Choose(config func(*Menu)) (i int, v interface{}) {
     }
 
     // Translate the response into an index and choice.
-    i = tr[resp]
+    choice := resp
+    if m.Shell {
+        choice, resp = splitShellCmd(resp)
+    }
+    i = tr[choice]
     v = m.Choices[i]
+
+    if action := m.Actions[i]; action != nil {
+        action(v.(Stringer), resp)
+    }
 
     // Return the index and choice selected.
     return

@@ -27,10 +27,16 @@ var items = []string{
 }
 
 func main() {
+    action := func(choice goline.Stringer, sharg string) {
+        fmt.Printf(`"%s" is my final answer.` + "\n", choice.String())
+    }
     i, _ := goline.Choose(func(m *goline.Menu) {
         m.Header = "Choose an item"
         m.Question = "Which item do you want?"
-        m.SetChoices(items)
+        for i := range items {
+            m.Choice(items[i], action)
+        }
+        m.Choice("Do nothing.", nil)
     })
     fmt.Println("Selected", i)
 }

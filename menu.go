@@ -8,7 +8,7 @@ package goline
  */
 import (
     "strconv"
-    "reflect"
+    //"reflect"
     "fmt"
     "os"
 )
@@ -103,6 +103,7 @@ func (smode SelectMode) SelectNames() bool   { return smode&NameSelect != 0 }
 type Menu struct {
     // A list of Menu choices. See Menu.Choice and Menu.SetChoices
     Choices []Stringer
+    Actions []func(Stringer, string)
     // A header text (describing the Menu).
     Header string
     // The text to prompt the user with after displaying the Menu.
@@ -116,6 +117,10 @@ type Menu struct {
     // The index and suffix used for all choices if IndexMode is Literal.
     Index       string
     IndexSuffix string
+    // When Menu.Shell is true, the menu acts like a shell. The first token of
+    // the response is treated as the menu item. The remaining string is passed
+    // to any action supplied for the choice in the second argument.
+    Shell bool
     // A handler function for any errors encountered.
     Panic func(os.Error)
 }
@@ -172,6 +177,7 @@ func (m *Menu) Selections() (choices []string, selections []string, tr map[strin
 
 //  Make a []Stringer with objects from a slice of arbitrary (interface) type.
 //  This should be called before calling m.Choice() to add single choices.
+/*
 func (m *Menu) SetChoices(cs interface{}) {
     // Zero out the old choice list (even if there is an error)
     var zero []Stringer
@@ -190,14 +196,25 @@ func (m *Menu) SetChoices(cs interface{}) {
         m.Choices[i] = makeStringer(csval.Index(i).Interface())
     }
 }
+*/
 
 //  Append a choice (either string or Stringer) to m.Choices.
-func (m *Menu) Choice(s interface{}) { m.Choices = append(m.Choices, makeStringer(s)) }
+func (m *Menu) Choice(item interface{}, action func(Stringer, string)) {
+    m.Choices = append(m.Choices, makeStringer(item))
+    m.Actions = append(m.Actions, action)
+}
+
 //  Prepend a choice (either string or Stringer) to the front (top) of m.Choices.
-func (m *Menu) ChoicePre(s interface{}) {
+func (m *Menu) ChoicePre(s interface{}, action func(Stringer, string)) {
     m.Choices = append(m.Choices, zeroStringer)
     if m.Len() > 1 {
         copy(m.Choices[1:], m.Choices)
     }
     m.Choices[0] = makeStringer(s)
+
+    m.Actions = append(m.Actions, nil)
+    if m.Len() > 1 {
+        copy(m.Actions[1:], m.Actions)
+    }
+    m.Actions[0] = action
 }
