@@ -84,8 +84,8 @@ func (set AnswerSetUnion) Has(x interface{}) bool {
 //  For a given number X use this picture of the number line to guide your
 //  intuition.
 //
-//      Infinity ... <----------------|----------------> ... Infinity
-//                  Below             X             Above
+//      -Infinity ... <----------------|----------------> ... Infinity
+//                   Below             X             Above
 type Direction uint
 
 const (
