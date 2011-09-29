@@ -46,15 +46,21 @@ var (
     EmptySet = AnswerSetUnion{}
 )
 
+//  The number of sets in the intersection.
 func (set AnswerSetIntersection) Size() int { return len(set) }
+//  The number of sets in the union.
 func (set AnswerSetUnion) Size() int        { return len(set) }
 
+//  The AnswerSet at index i.
 func (set AnswerSetIntersection) Set(i int) AnswerSet { return set[i] }
+//  The AnswerSet at index i.
 func (set AnswerSetUnion) Set(i int) AnswerSet        { return set[i] }
 
 func (set AnswerSetIntersection) String() string { return compositeString(set, "intersection") }
 func (set AnswerSetUnion) String() string        { return compositeString(set, "union") }
 
+//  Returns true if all AnswerSets in the intersection have x. Always returns
+//  true if the intersection is empty.
 func (set AnswerSetIntersection) Has(x interface{}) bool {
     for i := range set {
         if !set[i].Has(x) {
@@ -63,6 +69,8 @@ func (set AnswerSetIntersection) Has(x interface{}) bool {
     }
     return true
 }
+//  Returns true if any AnswerSets in the intersection have x. Always returns
+//  false if the intersection is empty.
 func (set AnswerSetUnion) Has(x interface{}) bool {
     for i := range set {
         if set[i].Has(x) {
@@ -72,6 +80,12 @@ func (set AnswerSetUnion) Has(x interface{}) bool {
     return false
 }
 
+//  The Direction type is used to define one-sided intervals on the number line.
+//  For a given number X use this picture of the number line to guide your
+//  intuition.
+//
+//      Infinity ... <----------------|----------------> ... Infinity
+//                  Below             X             Above
 type Direction uint
 
 const (
@@ -81,21 +95,22 @@ const (
 
 var infty = []string{Above: "Infinity", Below: "-Infinity"}
 
+//  Returns "Inifinty" or "-Infinity" depending on d's value.
 func (d Direction) Infinity() string { return infty[d] }
 
-// A range of uint64 values [Min, Max]
+//  A range of uint64 values [Min, Max].
 type UintRange struct {
     Min, Max uint64
 }
-// A range of int64 values [Min, Max]
+//  A range of int64 values [Min, Max].
 type IntRange struct {
     Min, Max int64
 }
-// A range of float64 values [Min, Max]
+//  A range of float64 values [Min, Max].
 type FloatRange struct {
     Min, Max float64
 }
-// A range of string values [Min, Max]
+//  A range of string values [Min, Max].
 type StringRange struct {
     Min, Max string
 }
@@ -138,8 +153,10 @@ func (ur StringRange) Has(x interface{}) bool {
     panic(makeErrorMemberType(ur, x))
 }
 
+//  A simple set consisting of any string elements.
 type StringSet []string
 
+//  Compares x (string) to each element in set.
 func (set StringSet) Has(x interface{}) bool {
     switch x.(type) {
     case string:
@@ -154,6 +171,7 @@ func (set StringSet) Has(x interface{}) bool {
     panic(makeErrorMemberType(set, x))
 }
 
+//  A string using notation `{"item1", "item2", ...}`
 func (set StringSet) String() string {
     n := len(set)
     if n == 0 {
