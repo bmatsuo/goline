@@ -23,6 +23,8 @@ Differences for HighLine users:
       provides a function `Confirm(question, yesorno, config) bool`. This is
       because the author things the term "agree" implies the desire of a
       positive response to the question ("yes").
+
+See github.com/bmatsuo/goline/examples for examples using goline.
 */
 package goline
 
@@ -33,8 +35,19 @@ import (
     "bufio"
     "utf8"
     "fmt"
+    "io"
     "os"
 )
+
+func fSay(wr io.Writer, msg string, trim bool) (int, os.Error) {
+    if trim {
+        msg = strings.TrimRightFunc(msg, unicode.IsSpace)
+    }
+    if c, _ := utf8.DecodeLastRuneInString(msg); unicode.IsSpace(c) {
+        return fmt.Fprint(wr, msg)
+    }
+    return fmt.Fprintln(wr, msg)
+}
 
 //  A simple function for printing (single-line) messages and prompts to
 //  os.Stdout. If trailing whitespace is present in the given message, it
@@ -43,19 +56,12 @@ import (
 //      goline.Say("Hello, World!") // Prints "Hello, World!\n"
 //      goline.Say("Hello, World! ") // Prints "Hello, World! "
 //  See also, SayTrimmed.
-func Say(msg string) (int, os.Error) {
-    if c, _ := utf8.DecodeLastRuneInString(msg); unicode.IsSpace(c) {
-        return fmt.Print(msg)
-    }
-    return fmt.Println(msg)
-}
+func Say(msg string) (int, os.Error) { return fSay(os.Stdout, msg, false) }
 
 //  Like Say, but trailing whitespace is removed from the message before
 //  an internal call to Say is made.
 //      goline.SayTrimmed("Hello, World! \n\t\t") // Prints "Hello, World!\n"
-func SayTrimmed(msg string) (int, os.Error) {
-    return Say(strings.TrimRightFunc(msg, unicode.IsSpace))
-}
+func SayTrimmed(msg string) (int, os.Error) { return fSay(os.Stdout, msg, true) }
 
 type ListMode uint
 
@@ -66,35 +72,17 @@ const (
     Rows
 )
 
-//  Print a list of items to os.Stdout. The list can be formatted into rows
-//  or into a matrix using the ListMode argument. The third argument has
-//  different meaning (and type) depending on the mode.
-//      MODE        OPTION  DEFAULT     MEANING
-//      Rows        n/a
-//      Inline      string  " or "      Join terminal element (e.g. "a, b, or c")
-//      Columns*    int     80          Maximum line width
-//  If the default option is desired, it should be passed as nil.
-//      goline.List([]string{"cat", "dog", "go fish"}, goline.ColumnsAcross, nil)
-//      /* Outputs:
-//       *  cat     dog     go fish
-//       */
-//      goline.List([]string{"cat", "dog", "go fish"}, goline.ColumnsDown, 15)
-//      /* Outputs:
-//       *  cat     go fish
-//       *  dog
-//       */
-//      goline.List([]string{"cat", "dog", "go fish"}, goline.Inline, " and ")
-//      /* Outputs:
-//       *  cat, dog, and go fish
-//       */
-//      goline.List([]string{"cat", "dog", "go fish"}, goline.Rows, nil)
-//      /* Outputs:
-//       *  cat
-//       *  dog
-//       *  go fish
-//       */
-//  See subdirectory examples/goline-lists.
-func List(items interface{}, mode ListMode, option interface{}) {
+func fList(wr io.Writer, items interface{}, mode ListMode, option interface{}) (nbytes int, err os.Error) {
+    checkOutput := func(n int, e os.Error) os.Error {
+        nbytes += n
+        return e
+    }
+    panicOutput := func(n int, e os.Error) {
+        if err = checkOutput(n, e); err != nil {
+            panic(err)
+        }
+    }
+
     ival := reflect.ValueOf(items)
 
     // Ensure that items is a slice type.
@@ -147,7 +135,7 @@ func List(items interface{}, mode ListMode, option interface{}) {
         if ncols <= 1 {
             // Just print rows if no more than 1 column fits.
             for i := range strs {
-                SayTrimmed(strs[i])
+                panicOutput(fSay(wr, strs[i], true))
             }
             break
         }
@@ -172,7 +160,7 @@ func List(items interface{}, mode ListMode, option interface{}) {
 
                 // Print the row (trimming excess padding).
                 row := strs[i:end]
-                SayTrimmed(strings.Join(row, " "))
+                panicOutput(fSay(wr, strings.Join(row, " "), true))
             }
         case ColumnsDown:
             for i := 0; i < nrows; i++ {
@@ -187,7 +175,7 @@ func List(items interface{}, mode ListMode, option interface{}) {
                 }
 
                 // Print the row with no excess padding.
-                SayTrimmed(strings.Join(row, " "))
+                panicOutput(fSay(wr, strings.Join(row, " "), true))
             }
         }
     case Inline:
@@ -195,10 +183,10 @@ func List(items interface{}, mode ListMode, option interface{}) {
 
         // Handle the special zero-/single-element case.
         if n == 0 {
-            Say("")
+            panicOutput(fSay(wr, "", false))
             break
         } else if n == 1 {
-            SayTrimmed(strs[0])
+            panicOutput(fSay(wr, strs[0], true))
             break
         }
 
@@ -214,21 +202,54 @@ func List(items interface{}, mode ListMode, option interface{}) {
 
         // Handle the special two-element case.
         if n == 2 {
-            SayTrimmed(strings.Join([]string{strs[0], " ", join, strs[1], "\n"}, ""))
+            panicOutput(fSay(wr, strings.Join([]string{strs[0], " ", join, strs[1], "\n"}, ""), true))
             break
         }
 
         // Create and print the inline list.
         strs[n-1] = join + strs[n-1]
-        SayTrimmed(strings.Join(strs, ", "))
+        panicOutput(fSay(wr, strings.Join(strs, ", "), true))
     case Rows:
         // Print each item on its own row.
         for i := range strs {
-            SayTrimmed(strs[i])
+            panicOutput(fSay(wr, strs[i], true))
         }
     default:
         panic(os.NewError("Unknown mode"))
     }
+    return
+}
+
+//  Print a list of items to os.Stdout. The list can be formatted into rows
+//  or into a matrix using the ListMode argument. The third argument has
+//  different meaning (and type) depending on the mode.
+//      MODE        OPTION  DEFAULT     MEANING
+//      Rows        n/a
+//      Inline      string  " or "      Join terminal element (e.g. "a, b, or c")
+//      Columns*    int     80          Maximum line width
+//  If the default option is desired, it should be passed as nil.
+//      goline.List([]string{"cat", "dog", "go fish"}, goline.ColumnsAcross, nil)
+//      /* Outputs:
+//       *  cat     dog     go fish
+//       */
+//      goline.List([]string{"cat", "dog", "go fish"}, goline.ColumnsDown, 15)
+//      /* Outputs:
+//       *  cat     go fish
+//       *  dog
+//       */
+//      goline.List([]string{"cat", "dog", "go fish"}, goline.Inline, " and ")
+//      /* Outputs:
+//       *  cat, dog, and go fish
+//       */
+//      goline.List([]string{"cat", "dog", "go fish"}, goline.Rows, nil)
+//      /* Outputs:
+//       *  cat
+//       *  dog
+//       *  go fish
+//       */
+//  See subdirectory examples/goline-lists.
+func List(items interface{}, mode ListMode, option interface{}) (nbytes int, err os.Error) {
+    return fList(os.Stdout, items, mode, option)
 }
 
 //  Prompt the user for text input. The result is stored in dest, which must
