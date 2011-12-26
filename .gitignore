@@ -1,9 +1,6 @@
-*.swp
-*.swo
-*.o
-*.a
-*.[865vq]
-[865vq].out
+*.sw[po]
+*.[865vqoa]
+[865vqa].out
 build.out
 _obj
 _test
