@@ -13,9 +13,9 @@ import (
 
 //  Returns the index i of the longest terminal substring s[i:] such that f
 //  returns true for all runes in s[i:]. Returns -1 if there is no such i.
-func stringSuffixIndexFunc(s string, f func(c int) bool) (i int) {
+func stringSuffixIndexFunc(s string, f func(c rune) bool) (i int) {
     var hasSuffix bool
-    i = strings.LastIndexFunc(s, func(c int) (done bool) {
+    i = strings.LastIndexFunc(s, func(c rune) (done bool) {
         if done = !f(c); !hasSuffix {
             hasSuffix = !done
         }
@@ -29,7 +29,7 @@ func stringSuffixIndexFunc(s string, f func(c int) bool) (i int) {
 
 //  Return the suffix string corresponding to the same call to
 //  stringSuffixIndexFunc.
-func stringSuffixFunc(s string, f func(c int) bool) (suff string) {
+func stringSuffixFunc(s string, f func(c rune) bool) (suff string) {
     if i := stringSuffixIndexFunc(s, f); i >= 0 {
         suff = s[i:]
     }

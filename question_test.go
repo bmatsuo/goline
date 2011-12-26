@@ -8,7 +8,6 @@ package goline
  */
 import (
     "testing"
-    "os"
 )
 
 func testOptions(T *testing.T) {
@@ -18,17 +17,17 @@ func testOptions(T *testing.T) {
     }
 }
 
-func testGood(T *testing.T, q *Question, name, in string, v interface{}) os.Error {
+func testGood(T *testing.T, q *Question, name, in string, v interface{}) error {
     t := q.Type()
     err := q.parse(in)
     if err != nil {
-        T.Errorf("%s %s parse failed %s", name, t.String(), err.String())
+        T.Errorf("%s %s parse failed %s", name, t.String(), err.Error())
     } else if q.val != v {
         T.Errorf("Parsed value != expected value (%#v != %#v)", q.val, v)
     }
     return err
 }
-func testBad(T *testing.T, q *Question, name, in string) os.Error {
+func testBad(T *testing.T, q *Question, name, in string) error {
     t := q.Type()
     err := q.parse(in)
     if err == nil {

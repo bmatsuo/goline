@@ -21,7 +21,7 @@ func TestSuffix(T *testing.T) {
         T.Errorf("Did not correctly return the suffix (%#v != %#v)", suff, spaces)
     }
 
-    all := func(c int) bool { return true }
+    all := func(c rune) bool { return true }
     if i := stringSuffixIndexFunc(s, all); i != 0 {
         T.Errorf("Did not correctly identify a the whole string as a suffix")
     }
@@ -29,7 +29,7 @@ func TestSuffix(T *testing.T) {
         T.Errorf("Did not correctly return the whole string as a suffix")
     }
 
-    none := func(c int) bool { return false }
+    none := func(c rune) bool { return false }
     if i := stringSuffixIndexFunc(s, none); i != -1 {
         T.Errorf("Did not correctly identify an empty suffix (%d != %d)", i, -1)
     }
