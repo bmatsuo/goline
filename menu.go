@@ -57,6 +57,8 @@ func getLetterIndex(i int) string {
 
 func (m *Menu) getIndexNoSuffix(i int) string {
 	switch {
+	case !m.UseIndex():
+		return ""
 	case m.UseLiteral():
 		return m.Index
 	case m.UseNumber():
@@ -108,6 +110,7 @@ func (smode SelectMode) SelectNames() bool   { return smode&NameSelect != 0 }
 type Menu struct {
 	// A list of Menu choices. See Menu.Choice and Menu.SetChoices
 	Choices []Stringer
+	Actions []func(string, string)
 	// A header text (describing the Menu).
 	Header string
 	// The text to prompt the user with after displaying the Menu.
@@ -118,6 +121,8 @@ type Menu struct {
 	IndexMode
 	// The selection mode for the choice prompt.
 	SelectMode
+	// Use shell type matching.
+	Shell bool
 	// The index and suffix used for all choices if IndexMode is Literal.
 	Index       string
 	IndexSuffix string
@@ -140,7 +145,7 @@ func (m *Menu) Len() int { return len(m.Choices) }
 //  maps menu selections (possibly name and index) to an integer index into
 //  m.Choices.
 func (m *Menu) Selections() (choices []string, selections []string, tr map[string]int) {
-	selectIndices, selectNames := m.SelectIndices(), m.SelectNames()
+	selectIndices, selectNames := m.UseIndex() && m.SelectIndices(), m.SelectNames()
 	if m.UseLiteral() {
 		// Can't select indices if all choices have the same index.
 		selectIndices = false
@@ -199,10 +204,14 @@ func (m *Menu) SetChoices(cs interface{}) {
 */
 
 //  Append a choice (either string or Stringer) to m.Choices.
-func (m *Menu) Choice(s interface{}) { m.Choices = append(m.Choices, makeStringer(s)) }
+func (m *Menu) Choice(name interface{}, action func(name string, arg string)) {
+	m.Choices = append(m.Choices, makeStringer(name))
+	m.Actions = append(m.Actions, action)
+}
 
 //  Prepend a choice (either string or Stringer) to the front (top) of m.Choices.
-func (m *Menu) ChoicePre(s interface{}) {
+func (m *Menu) ChoicePre(s interface{}, action func(name string, arg string)) {
+	m.Actions = append(append(make([]func(string, string), len(m.Actions)+1), action), m.Actions...)
 	m.Choices = append(m.Choices, zeroStringer)
 	if m.Len() > 1 {
 		copy(m.Choices[1:], m.Choices)

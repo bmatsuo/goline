@@ -406,6 +406,7 @@ func Choose(config func(*Menu)) (i int, v interface{}) {
 			m.Panic(ErrorNoChoices)
 			return
 		}
+		panic(ErrorNoChoices)
 	}
 
 	if len(m.Header) > 0 {
@@ -420,7 +421,11 @@ func Choose(config func(*Menu)) (i int, v interface{}) {
 		q.In(StringSet(selections))
 		q.Panic = func(err error) {
 			ok = false
-			m.Panic(err)
+			if m.Panic != nil {
+				m.Panic(err)
+			} else {
+				panic(err)
+			}
 		}
 	})
 	if !ok {
@@ -429,6 +434,10 @@ func Choose(config func(*Menu)) (i int, v interface{}) {
 
 	i = tr[resp]
 	v = m.Choices[i]
+
+	if m.Actions[i] != nil {
+		m.Actions[i](resp, "")
+	}
 
 	return
 }
