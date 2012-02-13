@@ -416,9 +416,13 @@ func Choose(config func(*Menu)) (i int, v interface{}) {
 	raw, selections, tr := m.Selections()
 	List(raw, m.ListMode, nil)
 	ok := true
-	var resp string
+	var resp, args string
 	Ask(&resp, m.Question, func(q *Question) {
-		q.In(StringSet(selections))
+		var set AnswerSet = StringSet(selections)
+		if m.Shell {
+			set = shellCommandSet(set.(StringSet))
+		}
+		q.In(set)
 		q.Panic = func(err error) {
 			ok = false
 			if m.Panic != nil {
@@ -431,12 +435,15 @@ func Choose(config func(*Menu)) (i int, v interface{}) {
 	if !ok {
 		return
 	}
+	if m.Shell {
+		resp, args = splitShellCmd(resp)
+	}
 
 	i = tr[resp]
 	v = m.Choices[i]
 
 	if m.Actions[i] != nil {
-		m.Actions[i](resp, "")
+		m.Actions[i](resp, args)
 	}
 
 	return

@@ -48,9 +48,7 @@ func main() {
 			m.Shell = true
 			m.ListMode = goline.Inline
 			m.IndexMode = goline.NoIndex
-			m.Choice("echo", func(s string, args string) {
-				fmt.Println(args)
-			})
+			m.Choice("echo", func(s string, args string) { fmt.Println(s, "|", args) })
 			m.Choice("quit", func(s string, args string) { cont = false })
 			m.Choice("exit", func(s string, args string) { cont = false })
 		})

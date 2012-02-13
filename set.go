@@ -203,12 +203,7 @@ func (set shellCommandSet) Has(x interface{}) bool {
     case string:
         y := x.(string)
         name, _ := splitShellCmd(y)
-        for i := range set {
-            if set[i] == name {
-                return true
-            }
-        }
-        return false
+		return StringSet(set).Has(name)
     }
     panic(makeErrorMemberType(set, x))
 }
