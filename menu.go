@@ -9,7 +9,6 @@ package goline
  */
 import (
 	"fmt"
-	"reflect"
 	"strconv"
 )
 
@@ -22,7 +21,8 @@ import (
 type IndexMode uint
 
 const (
-	Literal IndexMode = iota
+	NoIndex IndexMode = iota
+	Literal
 	Number
 	Letter
 )
@@ -32,6 +32,7 @@ const (
 	LiteralSuffix
 )
 
+func (imode IndexMode) UseIndex() bool       { return imode&0xFF != NoIndex }
 func (imode IndexMode) UseLiteral() bool       { return imode&0xFF == Literal }
 func (imode IndexMode) UseNumber() bool        { return imode&0xFF == Number }
 func (imode IndexMode) UseLetter() bool        { return imode&0xFF == Letter }
@@ -172,6 +173,7 @@ func (m *Menu) Selections() (choices []string, selections []string, tr map[strin
 
 //  Make a []Stringer with objects from a slice of arbitrary (interface) type.
 //  This should be called before calling m.Choice() to add single choices.
+/*
 func (m *Menu) SetChoices(cs interface{}) {
 	// Zero out the old choice list (even if there is an error)
 	var zero []Stringer
@@ -190,6 +192,7 @@ func (m *Menu) SetChoices(cs interface{}) {
 		m.Choices[i] = makeStringer(csval.Index(i).Interface())
 	}
 }
+*/
 
 //  Append a choice (either string or Stringer) to m.Choices.
 func (m *Menu) Choice(s interface{}) { m.Choices = append(m.Choices, makeStringer(s)) }

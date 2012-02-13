@@ -34,7 +34,7 @@ func main() {
         fmt.Printf("byte 0x%X\n", a)
 
         // Read a bounded integer.
-        var b int32
+        var b int8
         goline.Ask(&b, "Enter an int:  ", func(a *goline.Question) {
             a.Responses[goline.AskOnError] = a.Question
             a.Default = 13

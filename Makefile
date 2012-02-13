@@ -18,3 +18,20 @@ GOFILES=\
 
 include $(GOROOT)/src/Make.pkg
 
+ex: install force
+	bash -c 'for d in examples/*; do basename $$d; cd $$d && gomake && cd - && echo; done'
+
+exinstall: install force
+	bash -c 'for d in examples/*; do basename $$d; cd $$d && gomake install && cd - && echo; done'
+
+exclean: force
+	bash -c 'for d in examples/*; do basename $$d; cd $$d && gomake clean && cd - && echo; done'
+
+exnuke: force
+	bash -c 'for d in examples/*; do basename $$d; cd $$d && gomake nuke && cd - && echo; done'
+
+allclean: exclean clean
+
+allnuke: exnuke nuke
+
+force:

@@ -7,15 +7,17 @@
  */
 
 /*
-goline-questions does...
+goline-questions makes several demonstrations of the goline.Ask method.
 
 Usage:
 
-    goline-questions [options] ARGUMENT ...
+    goline-questions [options]
 
 Arguments:
 
 Options:
 
+    -v
+            Verbose output.
 */
 package documentation

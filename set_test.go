@@ -10,5 +10,18 @@ import (
     "testing"
 )
 
-func TestSet(T *testing.T) {
+func TestShellSet(T *testing.T) {
+    set := shellCommandSet{"echo", "ls", "which", "exit"}
+    if !set.Has("exit") {
+        T.Errorf("simplest good case failure")
+    }
+    if !set.Has("  echo") {
+        T.Errorf("preceding space error")
+    }
+    if !set.Has("  echo\t") {
+        T.Errorf("preceding & trailing space error")
+    }
+    if !set.Has("which 6g") {
+        T.Errorf("simple argument error")
+    }
 }

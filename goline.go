@@ -23,6 +23,8 @@ Differences for HighLine users:
       provides a function `Confirm(question, yesorno, config) bool`. This is
       because the author things the term "agree" implies the desire of a
       positive response to the question ("yes").
+
+See github.com/bmatsuo/goline/examples for examples using goline.
 */
 package goline
 
@@ -30,12 +32,23 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"reflect"
 	"strings"
 	"unicode"
 	"unicode/utf8"
 )
+
+func fSay(wr io.Writer, msg string, trim bool) (int, error) {
+	if trim {
+		msg = strings.TrimRightFunc(msg, unicode.IsSpace)
+	}
+	if c, _ := utf8.DecodeLastRuneInString(msg); unicode.IsSpace(c) {
+		return fmt.Fprint(wr, msg)
+	}
+	return fmt.Fprintln(wr, msg)
+}
 
 //  A simple function for printing (single-line) messages and prompts to
 //  os.Stdout. If trailing whitespace is present in the given message, it
@@ -364,6 +377,21 @@ func Confirm(question string, yes bool, config func(*Question)) bool {
 		return true
 	}
 	return false
+}
+
+func splitShellCmd(cmd string) (name, args string) {
+	cmd = strings.TrimLeftFunc(cmd, unicode.IsSpace)
+	pre := strings.IndexFunc(cmd, unicode.IsSpace)
+	if pre > 0 {
+		name = cmd[0:pre]
+		args = strings.TrimLeftFunc(cmd[pre:], unicode.IsSpace)
+	} else if pre == -1 {
+		name = cmd
+		args = ""
+	} else {
+		panic("unexpected case (untrimmed)")
+	}
+	return
 }
 
 //  Prompt the user to choose from a list of choices. Return the index

@@ -9,6 +9,7 @@ package goline
  */
 import (
 	"fmt"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -54,6 +55,10 @@ const (
 	// The error message printed when the parsed input was not in the Answer's
 	// AnswerSet.
 	NotInSet
+	// The error message printed when a response has requires too great of
+	// precision to store.
+	Precision
+
 	// The error message printed when the answer did not pass any validity
 	// test.
 	//NotValid
@@ -63,7 +68,7 @@ const (
 	//AmbiguousCompletion
 )
 
-type Responses [3]string
+type Responses [4]string
 
 var defaultResponses = Responses{
 	AskOnError:  "Please retry:  ",
@@ -79,6 +84,8 @@ func makeResponses() Responses {
 	copy(r[:], defaultResponses[:])
 	return r
 }
+
+func (rs Responses) Set(resp Response, msg string) { rs[resp] = msg }
 
 //  64-bit types are always used to read data. It is then cast to a thinner
 //  type dynamically with the "reflect" package.
@@ -110,6 +117,40 @@ var tstring = []string{
 func (t Type) String() string    { return tstring[t] }
 func (t Type) IsSliceType() bool { return t >= StringSlice }
 
+func TypeOf(v interface{}) (typ Type, err error) {
+	switch v.(type) {
+	case uint:
+		typ = Uint
+	case uint8:
+		typ = Uint
+	case uint16:
+		typ = Uint
+	case uint32:
+		typ = Uint
+	case uint64:
+		typ = Uint
+	case int:
+		typ = Int
+	case int8:
+		typ = Int
+	case int16:
+		typ = Int
+	case int32:
+		typ = Int
+	case int64:
+		typ = Int
+	case float32:
+		typ = Float
+	case float64:
+		typ = Float
+	case string:
+		typ = String
+	default:
+		err = fmt.Errorf("Unrecognizable type %s", reflect.TypeOf(v).Name())
+	}
+	return
+}
+
 type Question struct {
 	// The "prompt" message for the user.
 	Question string
@@ -135,6 +176,7 @@ type Question struct {
 	def   interface{}
 }
 
+//  Allocate a new Question of a specified type.
 func newQuestion(t Type) *Question {
 	q := new(Question)
 	q.typ = t
@@ -164,6 +206,7 @@ func newQuestion(t Type) *Question {
 	return q
 }
 
+//  Returns true if the q.set contains x.
 func (q *Question) setHas(x interface{}) bool {
 	if q.set != nil {
 		return q.set.Has(x)
@@ -242,6 +285,7 @@ func (q *Question) tryFirstAnswer() error {
 	return nil
 }
 
+//  Return the a string representation of q.Default for the prompt.
 func (q *Question) defaultString(suffix string) string {
 	if q.Default != nil {
 		return fmt.Sprintf("|%v|%s", q.Default, suffix)
@@ -257,7 +301,10 @@ func (q *Question) tryDefault() (val interface{}, err error) {
 }
 
 //  Specify a set of answers in which the response much be contained.
-func (q *Question) In(s AnswerSet) { q.set = s }
+func (q *Question) In(s AnswerSet) {
+	q.Responses[NotInSet] = fmt.Sprintf("Response is not in %s", s.String())
+	q.set = s
+}
 
 //  Returns the Type which is enforced by the Answer.
 func (q *Question) Type() Type { return q.typ }
