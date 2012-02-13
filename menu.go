@@ -32,7 +32,7 @@ const (
 	LiteralSuffix
 )
 
-func (imode IndexMode) UseIndex() bool       { return imode&0xFF != NoIndex }
+func (imode IndexMode) UseIndex() bool         { return imode&0xFF != NoIndex }
 func (imode IndexMode) UseLiteral() bool       { return imode&0xFF == Literal }
 func (imode IndexMode) UseNumber() bool        { return imode&0xFF == Number }
 func (imode IndexMode) UseLetter() bool        { return imode&0xFF == Letter }
@@ -68,6 +68,10 @@ func (m *Menu) getIndexNoSuffix(i int) string {
 }
 
 func (m *Menu) getIndex(i int) string {
+	if !m.UseIndex() {
+		return ""
+	}
+
 	ind := m.getIndexNoSuffix(i)
 
 	var s string
