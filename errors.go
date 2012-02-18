@@ -74,8 +74,10 @@ func (e ErrorPrecision) Response() Response { return Precision }
 type ErrorNotInSet struct{ error }
 
 func (a *Question) makeErrorNotInSet(val interface{}) ErrorNotInSet {
-	return ErrorNotInSet{
-		fmt.Errorf("%s %s (%#v)", a.Responses[NotInSet], a.set.String(), val)}
+	if msg := a.Responses[NotInSet]; msg != "" {
+		return ErrorNotInSet{fmt.Errorf("%s %v (%#v)", msg, a.set, val)}
+	}
+	return ErrorNotInSet{errors.New("Not in set")}
 }
 func (err ErrorNotInSet) IsRecoverable() bool { return true }
 func (err ErrorNotInSet) Response() Response { return NotInSet }

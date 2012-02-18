@@ -301,10 +301,7 @@ func (q *Question) tryDefault() (val interface{}, err error) {
 }
 
 //  Specify a set of answers in which the response much be contained.
-func (q *Question) In(s AnswerSet) {
-	q.Responses[NotInSet] = fmt.Sprintf("Response is not in %s", s.String())
-	q.set = s
-}
+func (q *Question) In(s AnswerSet) { q.set = s }
 
 //  Returns the Type which is enforced by the Answer.
 func (q *Question) Type() Type { return q.typ }
