@@ -420,7 +420,7 @@ func Choose(config func(*Menu)) (i int, v interface{}) {
 	Ask(&resp, m.Question, func(q *Question) {
 		var set AnswerSet = StringSet(selections)
 		if m.Shell {
-			set = shellCommandSet(set.(StringSet))
+			set = shellCommandSet(StringCompletionSet(set.(StringSet)))
 		}
 		q.In(set)
 		q.Panic = func(err error) {

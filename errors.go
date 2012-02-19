@@ -66,9 +66,9 @@ type ErrorPrecision struct{ Wide, Thin interface{} }
 
 var errPrecisionMsg = "Input out of destination range (%v -> %v)"
 
-func (e ErrorPrecision) Error() string      { return fmt.Sprintf(errPrecisionMsg, e.Wide, e.Thin) }
+func (e ErrorPrecision) Error() string       { return fmt.Sprintf(errPrecisionMsg, e.Wide, e.Thin) }
 func (e ErrorPrecision) IsRecoverable() bool { return true }
-func (e ErrorPrecision) Response() Response { return Precision }
+func (e ErrorPrecision) Response() Response  { return Precision }
 
 //  Errors returned when the input provided was not in a Question's AnswerSet.
 type ErrorNotInSet struct{ error }
@@ -80,7 +80,7 @@ func (a *Question) makeErrorNotInSet(val interface{}) ErrorNotInSet {
 	return ErrorNotInSet{errors.New("Not in set")}
 }
 func (err ErrorNotInSet) IsRecoverable() bool { return true }
-func (err ErrorNotInSet) Response() Response { return NotInSet }
+func (err ErrorNotInSet) Response() Response  { return NotInSet }
 
 //  Errors raised when the input (or default, or first-answer) are not of the
 //  prompting Question's type.
@@ -113,4 +113,32 @@ func (err ErrorMemberType) Type() string       { return err.Set.String() }
 func (err ErrorMemberType) MemberType() string { return err.Member.String() }
 func (err ErrorMemberType) Error() string {
 	return fmt.Sprintf("%s can't contain %s", err.Type(), err.MemberType())
+}
+
+type ErrorNoCompletion struct {
+	Msg   string
+	Set   AnswerSet
+	Value interface{}
+}
+
+func makeErrorNoCompletion(set AnswerSet, value interface{}) error {
+	return ErrorNoCompletion{defaultResponses[NoCompletion], set, value}
+}
+func (err ErrorNoCompletion) IsRecoverable() bool { return true }
+func (err ErrorNoCompletion) Error() string {
+	return fmt.Sprintf("%v (%v in %v)", err.Msg, err.Value, err.Set)
+}
+
+type ErrorAmbiguousCompletion struct {
+	Msg   string
+	Set   AnswerSet
+	Value interface{}
+}
+
+func makeErrorAmbiguousCompletion(set AnswerSet, value interface{}) error {
+	return ErrorNoCompletion{defaultResponses[AmbiguousCompletion], set, value}
+}
+func (err ErrorAmbiguousCompletion) IsRecoverable() bool { return true }
+func (err ErrorAmbiguousCompletion) Error() string {
+	return fmt.Sprintf("%s (%v in %v)", err.Msg, err.Value, err.Set)
 }

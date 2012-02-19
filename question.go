@@ -63,20 +63,20 @@ const (
 	// test.
 	//NotValid
 	// The error message printed when there are no auto-completion results.
-	//NoCompletion
+	NoCompletion
 	// The error message printed when auto-completion is ambiguous.
-	//AmbiguousCompletion
+	AmbiguousCompletion
 )
 
-type Responses [4]string
+type Responses [6]string
 
 var defaultResponses = Responses{
 	AskOnError:  "Please retry:  ",
 	InvalidType: "Type mismatch",
-	NotInSet:    "Answer not contained in",
-	//NotValid: "Answer did not pass validity test.",
-	//NoCompletion: "No auto-completion",
-	//AmbiguousCompletion: "Ambiguous auto-completion",
+	NotInSet:    "Unrecognized answer",
+	//NotValid: "Invalid answer.",
+	NoCompletion:        "Unrecognized answer",
+	AmbiguousCompletion: "Ambiguous answer",
 }
 
 func makeResponses() Responses {
@@ -204,6 +204,18 @@ func newQuestion(t Type) *Question {
 	q.Sep = " "
 	q.set = nil
 	return q
+}
+
+func (q *Question) setComplete(x interface{}) (interface{}, error) {
+	if q.set == nil {
+		return x, nil
+	}
+	switch q.set.(type) {
+	case CompletionSet:
+		return q.set.(CompletionSet).Complete(x)
+	}
+	return x, nil
+
 }
 
 //  Returns true if the q.set contains x.
@@ -406,8 +418,19 @@ func (q *Question) parse(in string) error {
 	case Uint:
 		fallthrough
 	case Float:
-		if !q.setHas(val) {
-			return q.makeErrorNotInSet(val)
+		val, err = q.setComplete(val)
+		switch err.(type) {
+		case nil:
+			if !q.setHas(val) {
+				return q.makeErrorNotInSet(val)
+			}
+		case ErrorNoCompletion:
+			e := err.(ErrorNoCompletion)
+			e.Msg = q.Responses[NoCompletion]
+		case ErrorAmbiguousCompletion:
+			e := err.(ErrorAmbiguousCompletion)
+			e.Msg = q.Responses[AmbiguousCompletion]
+		default:
 		}
 	case StringSlice:
 		fallthrough
