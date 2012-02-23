@@ -381,14 +381,13 @@ func Confirm(question string, yes bool, config func(*Question)) bool {
 
 func splitShellCmd(cmd string) (name, args string) {
 	cmd = strings.TrimLeftFunc(cmd, unicode.IsSpace)
-	pre := strings.IndexFunc(cmd, unicode.IsSpace)
-	if pre > 0 {
-		name = cmd[0:pre]
-		args = strings.TrimLeftFunc(cmd[pre:], unicode.IsSpace)
-	} else if pre == -1 {
+	fmt.Println("cmd: ", cmd)
+	switch pre := strings.IndexFunc(cmd, unicode.IsSpace); {
+	case pre > 0:
+		name, args = cmd[:pre], strings.TrimLeftFunc(cmd[pre:], unicode.IsSpace)
+	case pre == -1:
 		name = cmd
-		args = ""
-	} else {
+	default:
 		panic("unexpected case (untrimmed)")
 	}
 	return
@@ -441,7 +440,6 @@ func Choose(config func(*Menu)) (i int, v interface{}) {
 
 	i = tr[resp]
 	v = m.Choices[i]
-
 	if m.Actions[i] != nil {
 		m.Actions[i](resp, args)
 	}

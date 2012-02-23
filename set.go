@@ -253,8 +253,12 @@ func (set shellCommandSet) Complete(x interface{}) (interface{}, error) {
 	switch x.(type) {
 	case string:
 		y := x.(string)
-		name, _ := splitShellCmd(y)
-		return StringCompletionSet(set).Complete(name)
+		name, argv := splitShellCmd(y)
+		if argv == "" {
+			return StringCompletionSet(set).Complete(name)
+		}
+		cmd, err := StringCompletionSet(set).Complete(name)
+		return fmt.Sprintf("%v %s", cmd, argv), err
 	}
 	panic(makeErrorMemberType(set, x))
 }
