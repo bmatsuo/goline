@@ -381,7 +381,6 @@ func Confirm(question string, yes bool, config func(*Question)) bool {
 
 func splitShellCmd(cmd string) (name, args string) {
 	cmd = strings.TrimLeftFunc(cmd, unicode.IsSpace)
-	fmt.Println("cmd: ", cmd)
 	switch pre := strings.IndexFunc(cmd, unicode.IsSpace); {
 	case pre > 0:
 		name, args = cmd[:pre], strings.TrimLeftFunc(cmd[pre:], unicode.IsSpace)
